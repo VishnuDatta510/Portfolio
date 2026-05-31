@@ -2,6 +2,7 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Backlight } from "./Backlight";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -111,11 +112,13 @@ export default function About() {
 
                 <div className="about-image-wrapper">
                     <div className="about-image-glow" />
-                    <img
-                        src="picyay.jpg"
-                        alt="Profile Placeholder"
-                        className="about-image"
-                    />
+                    <Backlight blur={0} className="w-full h-full">
+                        <img
+                            src="picyay.jpg"
+                            alt="Profile Placeholder"
+                            className="about-image"
+                        />
+                    </Backlight>
                 </div>
             </div>
         </section>
