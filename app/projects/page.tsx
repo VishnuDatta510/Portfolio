@@ -9,6 +9,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
 import NoiseBackground from "@/components/NoiseBackground";
 import Footer from "@/components/Footer";
+import BlurText from "@/components/BlurText";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -126,7 +127,13 @@ export default function ProjectsPage() {
                 }}
               >
                 <div className="project-grid-header">
-                  <span className="project-name">{p.name}</span>
+                  <BlurText
+                    text={p.name}
+                    delay={30}
+                    animateBy="letters"
+                    direction="bottom"
+                    className="project-name"
+                  />
                   <span className="project-year">{p.year}</span>
                 </div>
 

@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FiGithub, FiExternalLink } from "react-icons/fi";
 import Link from "next/link";
+import BlurText from "./BlurText";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -123,7 +124,13 @@ export default function Projects() {
           >
             <span className="project-num">{p.num}</span>
             <div className="project-info">
-              <span className="project-name">{p.name}</span>
+              <BlurText
+                text={p.name}
+                delay={30}
+                animateBy="letters"
+                direction="bottom"
+                className="project-name"
+              />
               <p className="project-description">{p.description}</p>
             </div>
             <span className="project-year">{p.year}</span>
