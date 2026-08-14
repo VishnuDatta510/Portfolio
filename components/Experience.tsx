@@ -15,7 +15,6 @@ const EXPERIENCE = [
       "Led the design team of IOTA, the tech club of IIIT Sricity, owning visual direction across events and campaigns.",
       "Directed brand identity, event creatives and social media design while mentoring a team of junior designers.",
     ],
-    tags: ["Design", "Figma", "Leadership"],
     current: false,
   },
   {
@@ -29,7 +28,6 @@ const EXPERIENCE = [
       "Architected a transcription and speaker-diarization API, extending Whisper from 25MB to 500MB+ audio with silence-aware chunking pipelines.",
       "Engineering the backend for Music Distribution: scalable APIs and orchestration services for release validation, metadata processing and distribution workflows.",
     ],
-    tags: ["Python", "FastAPI", "FFmpeg", "Whisper", "Next.js"],
     current: true,
   },
 ];
@@ -93,18 +91,6 @@ export default function Experience() {
                 ease: "power3.out",
               },
               0.35,
-            )
-            .fromTo(
-              item.querySelectorAll(".experience-tags span"),
-              { opacity: 0, y: 10 },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.4,
-                stagger: 0.05,
-                ease: "power3.out",
-              },
-              0.5,
             );
         });
     }, sectionRef);
@@ -155,12 +141,6 @@ export default function Experience() {
                   <li key={j}>{b}</li>
                 ))}
               </ul>
-
-              <div className="experience-tags">
-                {e.tags.map((t) => (
-                  <span key={t}>{t}</span>
-                ))}
-              </div>
             </div>
           </article>
         ))}
