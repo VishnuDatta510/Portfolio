@@ -14,6 +14,21 @@ export default function Preloader({ onComplete, isSplineLoaded }: PreloaderProps
     const layerRef = useRef<HTMLDivElement>(null);
 
     const [introDone, setIntroDone] = useState(false);
+    const [waitedLongEnough, setWaitedLongEnough] = useState(false);
+
+    /* A cold cache or slow connection must never strand the visitor on the
+       loader, so the reveal proceeds with or without the 3D scene. */
+    useEffect(() => {
+        if (isSplineLoaded) return;
+        const timer = window.setTimeout(() => setWaitedLongEnough(true), 4500);
+        return () => window.clearTimeout(timer);
+    }, [isSplineLoaded]);
+
+    useEffect(() => {
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, []);
 
     useGSAP(
         () => {
@@ -61,7 +76,7 @@ export default function Preloader({ onComplete, isSplineLoaded }: PreloaderProps
     );
 
     useGSAP(() => {
-        if (!introDone || !isSplineLoaded) return;
+        if (!introDone || !(isSplineLoaded || waitedLongEnough)) return;
 
         const container = containerRef.current;
         const name = nameRef.current;
@@ -99,7 +114,7 @@ export default function Preloader({ onComplete, isSplineLoaded }: PreloaderProps
                 ease: "power2.inOut",
             }, "-=0.3");
 
-    }, [introDone, isSplineLoaded]);
+    }, [introDone, isSplineLoaded, waitedLongEnough]);
 
 
     const makeLetters = (text: string) =>

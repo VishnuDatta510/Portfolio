@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getPerfProfile, type AmbientQuality } from "@/lib/perf";
 
 const VERT = `
   attribute vec2 a_position;
@@ -71,13 +72,17 @@ const FRAG = `
     // ── Base dark colour (cool near-black) ──────────────
     vec3 base = vec3(0.035, 0.035, 0.055);
 
-    // ── Animated film grain (3-octave simplex) ───────────
+    // ── Animated film grain ──────────────────────────────
     float t    = u_time * 0.3;
     vec3  p    = vec3(uv * 4.0, t);
     float n1   = snoise(p);
     float n2   = snoise(p * 2.5 + vec3(1.7, 9.2, 3.1));
-    float n3   = snoise(p * 6.0 + vec3(4.2, 2.8, 7.5));
-    float grain = (n1*0.5 + n2*0.3 + n3*0.2) * 0.5 + 0.5;
+    #ifdef HIGH_QUALITY
+      float n3 = snoise(p * 6.0 + vec3(4.2, 2.8, 7.5));
+      float grain = (n1*0.5 + n2*0.3 + n3*0.2) * 0.5 + 0.5;
+    #else
+      float grain = (n1*0.6 + n2*0.4) * 0.5 + 0.5;
+    #endif
 
     // ── Mouse-follow spotlight ───────────────────────────
     float dist   = length(uv - muv);
@@ -101,16 +106,35 @@ const FRAG = `
   }
 `;
 
+/* Grain hides resolution loss, so the shader renders below CSS size and the
+   browser upscales it for a fraction of the fragment cost. */
+const SETTINGS: Record<Exclude<AmbientQuality, "off">, { scale: number; fps: number }> = {
+  high: { scale: 0.75, fps: 40 },
+  low: { scale: 0.5, fps: 30 },
+};
+
 export default function NoiseBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: 0, y: 0 });
-  const rafRef = useRef<number>(0);
+  const [quality, setQuality] = useState<AmbientQuality>("off");
+
+  useEffect(() => {
+    setQuality(getPerfProfile().ambient);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || quality === "off") return;
 
-    const gl = canvas.getContext("webgl");
+    const { scale, fps } = SETTINGS[quality];
+
+    const gl = canvas.getContext("webgl", {
+      alpha: false,
+      depth: false,
+      stencil: false,
+      antialias: false,
+      powerPreference: "low-power",
+    });
     if (!gl) return;
 
     const mkShader = (src: string, type: number) => {
@@ -120,18 +144,20 @@ export default function NoiseBackground() {
       return s;
     };
 
+    const frag = quality === "high" ? `#define HIGH_QUALITY\n${FRAG}` : FRAG;
     const prog = gl.createProgram()!;
     gl.attachShader(prog, mkShader(VERT, gl.VERTEX_SHADER));
-    gl.attachShader(prog, mkShader(FRAG, gl.FRAGMENT_SHADER));
+    gl.attachShader(prog, mkShader(frag, gl.FRAGMENT_SHADER));
     gl.linkProgram(prog);
     gl.useProgram(prog);
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      -1, -1, 1, -1, -1, 1,
-      1, -1, 1, 1, -1, 1,
-    ]), gl.STATIC_DRAW);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1]),
+      gl.STATIC_DRAW,
+    );
 
     const pos = gl.getAttribLocation(prog, "a_position");
     gl.enableVertexAttribArray(pos);
@@ -142,48 +168,76 @@ export default function NoiseBackground() {
     const uMouse = gl.getUniformLocation(prog, "u_mouse");
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = Math.max(1, Math.round(window.innerWidth * scale));
+      canvas.height = Math.max(1, Math.round(window.innerHeight * scale));
       gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
     };
     resize();
-    window.addEventListener("resize", resize);
+
+    let resizeTimer = 0;
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(resize, 150);
+    };
+    window.addEventListener("resize", onResize, { passive: true });
 
     const onMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: window.innerHeight - e.clientY };
     };
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMove, { passive: true });
 
     const start = performance.now();
-    const render = () => {
-      const t = (performance.now() - start) / 1000;
-      gl.uniform1f(uTime, t);
-      gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform2f(uMouse, mouseRef.current.x, mouseRef.current.y);
+    const frameInterval = 1000 / fps;
+    let rafId = 0;
+    let lastFrame = 0;
+
+    const render = (now: number) => {
+      rafId = requestAnimationFrame(render);
+      if (now - lastFrame < frameInterval) return;
+      lastFrame = now;
+
+      gl.uniform1f(uTime, (now - start) / 1000);
+      gl.uniform2f(
+        uMouse,
+        mouseRef.current.x * scale,
+        mouseRef.current.y * scale,
+      );
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      rafRef.current = requestAnimationFrame(render);
     };
-    rafRef.current = requestAnimationFrame(render);
+    rafId = requestAnimationFrame(render);
+
+    const onVisibility = () => {
+      cancelAnimationFrame(rafId);
+      if (!document.hidden) {
+        lastFrame = 0;
+        rafId = requestAnimationFrame(render);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(rafId);
+    };
+    canvas.addEventListener("webglcontextlost", onContextLost);
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(rafId);
+      window.clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("visibilitychange", onVisibility);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, []);
+  }, [quality]);
 
   return (
     <canvas
       ref={canvasRef}
-      style={{
-        position: "fixed",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 0,
-        display: "block",
-        pointerEvents: "none",
-      }}
+      aria-hidden="true"
+      className={`ambient-canvas${quality === "off" ? " ambient-canvas--static" : ""}`}
     />
   );
 }

@@ -15,18 +15,22 @@ export default function Navbar({ isReady }: NavbarProps) {
     useEffect(() => {
         if (!isReady || !navRef.current) return;
 
-        gsap.to(navRef.current, {
+        const nav = navRef.current;
+
+        gsap.to(nav, {
             opacity: 1,
             y: 0,
             duration: 0.6,
             ease: "power3.out",
         });
 
-        ScrollTrigger.create({
+        const trigger = ScrollTrigger.create({
             start: "top -80",
-            onEnter: () => navRef.current?.classList.add("navbar-blur"),
-            onLeaveBack: () => navRef.current?.classList.remove("navbar-blur"),
+            onEnter: () => nav.classList.add("navbar-blur"),
+            onLeaveBack: () => nav.classList.remove("navbar-blur"),
         });
+
+        return () => trigger.kill();
     }, [isReady]);
 
     const scrollTo = (id: string) => {
@@ -49,6 +53,9 @@ export default function Navbar({ isReady }: NavbarProps) {
                 </a>
                 <button className="navbar-link hoverable" onClick={() => scrollTo("about")}>
                     About
+                </button>
+                <button className="navbar-link hoverable" onClick={() => scrollTo("experience")}>
+                    Experience
                 </button>
                 <button className="navbar-link hoverable" onClick={() => scrollTo("skills")}>
                     Skills

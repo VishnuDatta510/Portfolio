@@ -73,6 +73,28 @@ a {
   cursor: none;
 }
 
+/* === 03. AMBIENT BACKGROUND === */
+.ambient-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/* Shown instead of the shader on constrained devices. */
+.ambient-canvas--static {
+  background:
+    radial-gradient(
+      70% 55% at 50% 40%,
+      rgba(139, 92, 246, 0.09) 0%,
+      transparent 70%
+    ),
+    radial-gradient(120% 120% at 50% 50%, #0b0b12 0%, #050508 100%);
+}
+
 /* === 04. SCROLLBAR === */
 ::-webkit-scrollbar {
   width: 4px;
@@ -124,6 +146,7 @@ h6 {
   z-index: 10001;
   transform: translate(-50%, -50%);
   mix-blend-mode: difference;
+  will-change: transform;
 }
 
 .cursor-circle {
@@ -137,6 +160,7 @@ h6 {
   pointer-events: none;
   z-index: 10000;
   transform: translate(-50%, -50%);
+  will-change: transform;
   transition:
     width 0.3s var(--ease),
     height 0.3s var(--ease),
@@ -808,19 +832,19 @@ h6 {
 
 .section-label {
   font-family: var(--font-body), sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   font-weight: 500;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: 60px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 }
 
 .section-label-line {
-  width: 40px;
+  width: 52px;
   height: 1px;
   background: var(--text-subtle);
 }
@@ -1824,26 +1848,26 @@ h6 {
   content: "AMAZING";
   position: absolute;
   left: 0.5rem;
-  transform: translate(-50%, -50%);
   width: 100%;
   color: var(--accent);
-  filter: blur(40px);
+  /* Blur stays fixed: animating it re-rasterises the whole layer every frame,
+     while opacity and scale are handled by the compositor. */
+  filter: blur(20px);
   opacity: 0.6;
   z-index: -1;
+  will-change: opacity, transform;
   animation: pulseGlow 2s ease-in-out infinite alternate;
 }
 
 @keyframes pulseGlow {
   0% {
-    filter: blur(15px);
     opacity: 0.5;
     transform: scale(0.98);
   }
 
   100% {
-    filter: blur(25px);
     opacity: 0.9;
-    transform: scale(1.02);
+    transform: scale(1.04);
   }
 }
 
@@ -1920,4 +1944,290 @@ h6 {
 .footer-back-to-top:hover {
   color: var(--accent);
   transform: translateY(-4px);
+}
+
+/* === EXPERIENCE — roadmap timeline === */
+.experience {
+  padding: 80px 40px;
+}
+
+.experience-timeline {
+  position: relative;
+  margin-top: 40px;
+}
+
+.experience-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  transform: translateX(-50%);
+}
+
+.experience-line-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    var(--accent),
+    rgba(139, 92, 246, 0.35)
+  );
+  transform: scaleY(0);
+  transform-origin: top center;
+  will-change: transform;
+}
+
+.experience-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 80px;
+  padding: 40px 0;
+}
+
+.experience-item--left .experience-card {
+  grid-column: 1;
+}
+
+.experience-item--right .experience-card {
+  grid-column: 2;
+}
+
+.experience-node {
+  position: absolute;
+  left: 50%;
+  top: 64px;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  will-change: transform;
+}
+
+.experience-node i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.experience-node i.current {
+  animation: exp-pulse 2.4s var(--ease) infinite;
+}
+
+@keyframes exp-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--accent-glow);
+  }
+  55% {
+    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+  }
+}
+
+.experience-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px 40px;
+  transition:
+    transform 0.5s var(--ease),
+    border-color 0.5s var(--ease),
+    box-shadow 0.5s var(--ease);
+}
+
+.experience-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 70px -24px var(--accent-glow);
+}
+
+.experience-period-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.experience-period {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+.experience-location {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.experience-role {
+  font-family: var(--font-display), "Syne", sans-serif;
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.experience-org {
+  margin-top: 6px;
+  font-family: var(--font-body), "Inter", sans-serif;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.experience-badge {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  vertical-align: middle;
+  transform: translateY(-1px);
+}
+
+.experience-points {
+  list-style: none;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.experience-points li {
+  position: relative;
+  padding-left: 22px;
+  font-family: var(--font-body), "Inter", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.experience-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.experience-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.experience-tags span {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  transition:
+    color 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+}
+
+.experience-card:hover .experience-tags span {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+@media (max-width: 900px) {
+  .experience-line {
+    left: 8px;
+    transform: none;
+  }
+
+  .experience-item {
+    grid-template-columns: 1fr;
+    padding-left: 44px;
+  }
+
+  .experience-item--left .experience-card,
+  .experience-item--right .experience-card {
+    grid-column: 1;
+  }
+
+  .experience-node {
+    left: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .experience {
+    padding: 60px 20px;
+  }
+
+  .experience-card {
+    padding: 28px 24px;
+  }
+}
+
+/* === HERO 3D FALLBACK === */
+/* Stands in for the Spline scene where a second WebGL context would cost
+   more frames than the visual is worth. */
+.hero-orb-fallback {
+  width: min(46vw, 520px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  margin-left: auto;
+  margin-right: clamp(0px, 6vw, 120px);
+  background:
+    radial-gradient(
+      circle at 34% 30%,
+      rgba(196, 181, 253, 0.5) 0%,
+      rgba(139, 92, 246, 0.32) 30%,
+      rgba(76, 29, 149, 0.22) 58%,
+      transparent 72%
+    );
+  filter: blur(12px);
+  opacity: 0.85;
+}
+
+@media (max-width: 900px) {
+  .hero-orb-fallback {
+    margin: 0 auto;
+    width: min(80vw, 420px);
+    opacity: 0.6;
+  }
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,9 +1,10 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
 import type { Application } from "@splinetool/runtime";
+import { getPerfProfile } from "@/lib/perf";
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), {
   ssr: false,
@@ -20,6 +21,17 @@ export default function Hero({ isReady, onSplineLoad }: HeroProps) {
   const heroRef = useRef<HTMLElement>(null);
   const hasAnimated = useRef(false);
   const splineApp = useRef<Application | null>(null);
+  const inView = useRef(true);
+  const [allow3D, setAllow3D] = useState(false);
+
+  useEffect(() => {
+    if (getPerfProfile().allow3D) {
+      setAllow3D(true);
+    } else {
+      // Nothing to wait for, so release the preloader straight away.
+      onSplineLoad();
+    }
+  }, [onSplineLoad]);
 
   useEffect(() => {
     if (!isReady || hasAnimated.current || !heroRef.current) return;
@@ -27,7 +39,7 @@ export default function Hero({ isReady, onSplineLoad }: HeroProps) {
 
     const el = heroRef.current;
 
-    gsap.context(() => {
+    const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
       tl.fromTo(
@@ -84,20 +96,49 @@ export default function Hero({ isReady, onSplineLoad }: HeroProps) {
         },
       });
 
+      const wrap = el.querySelector(".hero-spline-wrap") as HTMLElement | null;
+
       ScrollTrigger.create({
-        trigger: heroRef.current,
+        trigger: el,
         start: "bottom top",
         onLeave: () => {
-          const wrap = el.querySelector(".hero-spline-wrap") as HTMLElement;
+          inView.current = false;
           if (wrap) wrap.style.visibility = "hidden";
+          splineApp.current?.stop();
         },
         onEnterBack: () => {
-          const wrap = el.querySelector(".hero-spline-wrap") as HTMLElement;
+          inView.current = true;
           if (wrap) wrap.style.visibility = "visible";
+          if (!document.hidden) splineApp.current?.play();
         },
       });
-    });
+    }, el);
+
+    return () => {
+      hasAnimated.current = false;
+      ctx.revert();
+    };
   }, [isReady]);
+
+  /* A backgrounded tab still burns GPU on the 3D scene otherwise. */
+  useEffect(() => {
+    if (!allow3D) return;
+
+    const onVisibility = () => {
+      if (document.hidden) splineApp.current?.stop();
+      else if (inView.current) splineApp.current?.play();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [allow3D]);
+
+  useEffect(() => {
+    return () => {
+      splineApp.current?.dispose();
+      splineApp.current = null;
+    };
+  }, []);
 
   const onLoad = (app: Application) => {
     splineApp.current = app;
@@ -128,13 +169,17 @@ export default function Hero({ isReady, onSplineLoad }: HeroProps) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          pointerEvents: "auto",
+          pointerEvents: allow3D ? "auto" : "none",
         }}
       >
-        <Spline
-          scene="https://prod.spline.design/sF4UdzWuD4EmnRZ2/scene.splinecode"
-          onLoad={onLoad}
-        />
+        {allow3D ? (
+          <Spline
+            scene="https://prod.spline.design/sF4UdzWuD4EmnRZ2/scene.splinecode"
+            onLoad={onLoad}
+          />
+        ) : (
+          <div className="hero-orb-fallback" aria-hidden="true" />
+        )}
       </div>
 
       {/* Content overlaid on top */}

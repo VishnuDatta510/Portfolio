@@ -1,8 +1,8 @@
 "use client";
 import { useRef, useEffect } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Backlight } from "./Backlight";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -12,64 +12,80 @@ export default function About() {
     useEffect(() => {
         if (!sectionRef.current) return;
 
-        const words = sectionRef.current.querySelectorAll(".word-inner");
-        const eduElements = sectionRef.current.querySelectorAll(".about-education > *");
+        const root = sectionRef.current;
 
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: sectionRef.current.querySelector(".about-text"),
-                start: "top 80%",
-                toggleActions: "play none none none",
-            }
-        });
+        const ctx = gsap.context(() => {
+            const words = root.querySelectorAll(".word-inner");
+            const eduElements = root.querySelectorAll(".about-education > *");
 
-        tl.to(words, {
-            y: 0,
-            opacity: 1,
-            stagger: 0.03,
-            duration: 0.6,
-            ease: "power3.out",
-        });
-
-        if (eduElements.length > 0) {
-            tl.fromTo(eduElements,
-                { y: 30, opacity: 0 },
-                {
-                    y: 0,
-                    opacity: 1,
-                    stagger: 0.15,
-                    duration: 0.8,
-                    ease: "power3.out",
-                },
-                "-=0.2"
-            );
-        }
-
-        const imageWrapper = sectionRef.current.querySelector(".about-image-wrapper");
-        if (imageWrapper) {
-            gsap.to(imageWrapper, {
-                opacity: 1,
-                scale: 1,
-                duration: 1,
-                ease: "power3.out",
+            const tl = gsap.timeline({
                 scrollTrigger: {
-                    trigger: imageWrapper,
+                    trigger: root.querySelector(".about-text"),
                     start: "top 80%",
                     toggleActions: "play none none none",
-                },
+                }
             });
 
-            const image = sectionRef.current.querySelector(".about-image");
-            if (image) {
-                gsap.to(image, {
-                    y: -15,
-                    duration: 2.5,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: "sine.inOut"
-                });
+            tl.to(words, {
+                y: 0,
+                opacity: 1,
+                stagger: 0.03,
+                duration: 0.6,
+                ease: "power3.out",
+            });
+
+            if (eduElements.length > 0) {
+                tl.fromTo(eduElements,
+                    { y: 30, opacity: 0 },
+                    {
+                        y: 0,
+                        opacity: 1,
+                        stagger: 0.15,
+                        duration: 0.8,
+                        ease: "power3.out",
+                    },
+                    "-=0.2"
+                );
             }
-        }
+
+            const imageWrapper = root.querySelector(".about-image-wrapper");
+            if (imageWrapper) {
+                gsap.to(imageWrapper, {
+                    opacity: 1,
+                    scale: 1,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: imageWrapper,
+                        start: "top 80%",
+                        toggleActions: "play none none none",
+                    },
+                });
+
+                const image = root.querySelector(".about-image");
+                if (image) {
+                    const float = gsap.to(image, {
+                        y: -15,
+                        duration: 2.5,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: "sine.inOut",
+                        paused: true,
+                    });
+
+                    // Idles instead of ticking forever while offscreen.
+                    ScrollTrigger.create({
+                        trigger: imageWrapper,
+                        start: "top bottom",
+                        end: "bottom top",
+                        onToggle: ({ isActive }) =>
+                            isActive ? float.play() : float.pause(),
+                    });
+                }
+            }
+        }, root);
+
+        return () => ctx.revert();
     }, []);
 
     const wrapWords = (text: string) =>
@@ -112,13 +128,14 @@ export default function About() {
 
                 <div className="about-image-wrapper">
                     <div className="about-image-glow" />
-                    <Backlight blur={0} className="w-full h-full">
-                        <img
-                            src="picyay.jpg"
-                            alt="Profile Placeholder"
-                            className="about-image"
-                        />
-                    </Backlight>
+                    <Image
+                        src="/picyay.jpg"
+                        alt="Vishnu Datta"
+                        width={500}
+                        height={500}
+                        sizes="(max-width: 560px) 92vw, 500px"
+                        className="about-image"
+                    />
                 </div>
             </div>
         </section>

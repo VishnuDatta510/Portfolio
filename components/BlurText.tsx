@@ -1,37 +1,20 @@
 "use client";
 
-import { motion } from "motion/react";
-import { useEffect, useRef, useState, useMemo } from "react";
-
-const buildKeyframes = (
-  from: Record<string, any>,
-  steps: Record<string, any>[]
-) => {
-  const keys = new Set([
-    ...Object.keys(from),
-    ...steps.flatMap((s) => Object.keys(s)),
-  ]);
-
-  const keyframes: Record<string, any[]> = {};
-  keys.forEach((k) => {
-    keyframes[k] = [from[k], ...steps.map((s) => s[k])];
-  });
-  return keyframes;
-};
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
 
 interface BlurTextProps {
   text?: string;
+  /** Milliseconds between each segment. */
   delay?: number;
   className?: string;
   animateBy?: "words" | "letters";
   direction?: "top" | "bottom";
   threshold?: number;
   rootMargin?: string;
-  animationFrom?: Record<string, any>;
-  animationTo?: Record<string, any>[];
-  easing?: (t: number) => number;
-  onAnimationComplete?: () => void;
+  /** Seconds per keyframe step. */
   stepDuration?: number;
+  onAnimationComplete?: () => void;
 }
 
 const BlurText = ({
@@ -42,60 +25,67 @@ const BlurText = ({
   direction = "top",
   threshold = 0.1,
   rootMargin = "0px",
-  animationFrom,
-  animationTo,
-  easing = (t) => t,
-  onAnimationComplete,
   stepDuration = 0.35,
+  onAnimationComplete,
 }: BlurTextProps) => {
-  const elements = animateBy === "words" ? text.split(" ") : text.split("");
-  const [inView, setInView] = useState(false);
+  const segments = animateBy === "words" ? text.split(" ") : text.split("");
   const ref = useRef<HTMLSpanElement>(null);
+  const completeRef = useRef(onAnimationComplete);
+  completeRef.current = onAnimationComplete;
+
+  const fromY = direction === "top" ? -50 : 50;
+  const midY = direction === "top" ? 5 : -5;
 
   useEffect(() => {
-    if (!ref.current) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const targets = gsap.utils.toArray<HTMLElement>(el.children);
+    if (targets.length === 0) return;
+
+    let tween: gsap.core.Tween | null = null;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.unobserve(ref.current!);
-        }
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+
+        tween = gsap.to(targets, {
+          keyframes: [
+            {
+              opacity: 0.5,
+              y: midY,
+              filter: "blur(5px)",
+              duration: stepDuration,
+              ease: "none",
+            },
+            {
+              opacity: 1,
+              y: 0,
+              filter: "blur(0px)",
+              duration: stepDuration,
+              ease: "none",
+            },
+          ],
+          stagger: delay / 1000,
+          onComplete: () => {
+            // A lingering blur filter keeps every glyph on its own raster
+            // layer, so drop it once the reveal has settled.
+            gsap.set(targets, { clearProps: "filter,willChange" });
+            completeRef.current?.();
+          },
+        });
       },
-      { threshold, rootMargin }
+      { threshold, rootMargin },
     );
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold, rootMargin]);
 
-  const defaultFrom = useMemo(
-    () =>
-      direction === "top"
-        ? { filter: "blur(10px)", opacity: 0, y: -50 }
-        : { filter: "blur(10px)", opacity: 0, y: 50 },
-    [direction]
-  );
+    observer.observe(el);
 
-  const defaultTo = useMemo(
-    () => [
-      {
-        filter: "blur(5px)",
-        opacity: 0.5,
-        y: direction === "top" ? 5 : -5,
-      },
-      { filter: "blur(0px)", opacity: 1, y: 0 },
-    ],
-    [direction]
-  );
-
-  const fromSnapshot = animationFrom ?? defaultFrom;
-  const toSnapshots = animationTo ?? defaultTo;
-
-  const stepCount = toSnapshots.length + 1;
-  const totalDuration = stepDuration * (stepCount - 1);
-  const times = Array.from(
-    { length: stepCount },
-    (_, i) => (stepCount === 1 ? 0 : i / (stepCount - 1))
-  );
+    return () => {
+      observer.disconnect();
+      tween?.kill();
+    };
+  }, [delay, midY, rootMargin, stepDuration, threshold, text]);
 
   return (
     <span
@@ -103,32 +93,21 @@ const BlurText = ({
       className={className}
       style={{ display: "inline-flex", flexWrap: "wrap" }}
     >
-      {elements.map((segment, index) => {
-        const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
-
-        const spanTransition: Record<string, any> = {
-          duration: totalDuration,
-          times,
-          delay: (index * delay) / 1000,
-        };
-        spanTransition.ease = easing;
-
-        return (
-          <motion.span
-            className="inline-block will-change-[transform,filter,opacity]"
-            key={index}
-            initial={fromSnapshot}
-            animate={inView ? animateKeyframes : fromSnapshot}
-            transition={spanTransition}
-            onAnimationComplete={
-              index === elements.length - 1 ? onAnimationComplete : undefined
-            }
-          >
-            {segment === " " ? "\u00A0" : segment}
-            {animateBy === "words" && index < elements.length - 1 && "\u00A0"}
-          </motion.span>
-        );
-      })}
+      {segments.map((segment, index) => (
+        <span
+          key={index}
+          style={{
+            display: "inline-block",
+            opacity: 0,
+            transform: `translateY(${fromY}px)`,
+            filter: "blur(10px)",
+            willChange: "transform, opacity, filter",
+          }}
+        >
+          {segment === " " ? "\u00A0" : segment}
+          {animateBy === "words" && index < segments.length - 1 && "\u00A0"}
+        </span>
+      ))}
     </span>
   );
 };

@@ -17,11 +17,27 @@ export default function CustomCursor() {
 
     const xTo = gsap.quickTo(circle, "x", { duration: 0.2, ease: "power2" });
     const yTo = gsap.quickTo(circle, "y", { duration: 0.2, ease: "power2" });
+    const setDotX = gsap.quickSetter(dot, "x", "px");
+    const setDotY = gsap.quickSetter(dot, "y", "px");
+
+    /* High polling-rate mice fire far more often than the display refreshes,
+       so coalesce moves into a single update per frame. */
+    let frame = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+
+    const applyPosition = () => {
+      frame = 0;
+      setDotX(pointerX);
+      setDotY(pointerY);
+      xTo(pointerX);
+      yTo(pointerY);
+    };
 
     const moveCursor = (e: MouseEvent) => {
-      gsap.set(dot, { x: e.clientX, y: e.clientY });
-      xTo(e.clientX);
-      yTo(e.clientY);
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      if (!frame) frame = requestAnimationFrame(applyPosition);
     };
 
     const handleMouseOver = (e: MouseEvent) => {
@@ -51,11 +67,12 @@ export default function CustomCursor() {
       }
     };
 
-    window.addEventListener("mousemove", moveCursor);
-    document.addEventListener("mouseover", handleMouseOver);
-    document.addEventListener("mouseout", handleMouseOut);
+    window.addEventListener("mousemove", moveCursor, { passive: true });
+    document.addEventListener("mouseover", handleMouseOver, { passive: true });
+    document.addEventListener("mouseout", handleMouseOut, { passive: true });
 
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("mousemove", moveCursor);
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);

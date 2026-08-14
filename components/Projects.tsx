@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FiGithub, FiExternalLink } from "react-icons/fi";
@@ -57,50 +57,27 @@ const projects = [
 
 export default function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
-  const floatRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!sectionRef.current) return;
+    const root = sectionRef.current;
+    if (!root) return;
 
-    const rows = sectionRef.current.querySelectorAll(".project-row");
-    gsap.to(rows, {
-      opacity: 1,
-      y: 0,
-      stagger: 0.12,
-      duration: 0.7,
-      ease: "power3.out",
-      scrollTrigger: {
-        trigger: sectionRef.current.querySelector(".projects-list"),
-        start: "top 80%",
-        toggleActions: "play none none none",
-      },
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleMouse = (e: MouseEvent) => {
-      if (!floatRef.current) return;
-      gsap.to(floatRef.current, {
-        x: e.clientX - 175,
-        y: e.clientY - 110,
-        duration: 0.4,
+    const ctx = gsap.context(() => {
+      gsap.to(".project-row", {
+        opacity: 1,
+        y: 0,
+        stagger: 0.12,
+        duration: 0.7,
         ease: "power3.out",
+        scrollTrigger: {
+          trigger: root.querySelector(".projects-list"),
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
       });
-    };
+    }, root);
 
-    const listContainer = sectionRef.current?.querySelector(".projects-list");
-    if (listContainer) {
-      listContainer.addEventListener("mousemove", handleMouse as EventListener);
-    }
-    return () => {
-      if (listContainer) {
-        listContainer.removeEventListener(
-          "mousemove",
-          handleMouse as EventListener,
-        );
-      }
-    };
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -111,12 +88,10 @@ export default function Projects() {
       </div>
 
       <div className="projects-list">
-        {projects.map((p, i) => (
+        {projects.map((p) => (
           <div
             key={p.num}
             className="project-row hoverable"
-            onMouseEnter={() => setActiveIndex(i)}
-            onMouseLeave={() => setActiveIndex(null)}
             onClick={() => {
               const url = p.liveLink || p.github;
               if (url) window.open(url, "_blank");
@@ -168,19 +143,6 @@ export default function Projects() {
           <span className="btn-icon">→</span>
         </Link>
       </div>
-
-      {/* Floating image preview */}
-      {/* <div
-                ref={floatRef}
-                className={`project-image-float ${activeIndex !== null ? "active" : ""}`}
-            >
-                <div
-                    className="project-image-float-inner"
-                    style={{
-                        backgroundImage: activeIndex !== null ? `url('${projects[activeIndex].image}')` : "none",
-                    }}
-                />
-            </div> */}
     </section>
   );
 }

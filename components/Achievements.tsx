@@ -9,32 +9,37 @@ export default function Achievements() {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!sectionRef.current) return;
+    const root = sectionRef.current;
+    if (!root) return;
 
-    const cards = sectionRef.current.querySelectorAll(".achievement-card");
-
-    gsap.fromTo(
-      cards,
-      {
-        y: 100,
-        opacity: 0,
-        rotationX: 45,
-        transformPerspective: 1000,
-      },
-      {
-        y: 0,
-        opacity: 1,
-        rotationX: 0,
-        duration: 1,
-        stagger: 0.2,
-        ease: "power4.out",
-        scrollTrigger: {
-          trigger: sectionRef.current.querySelector(".achievements-grid"),
-          start: "top 80%",
-          toggleActions: "play none none none",
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".achievement-card",
+        {
+          y: 100,
+          opacity: 0,
+          rotationX: 45,
+          transformPerspective: 1000,
         },
-      },
-    );
+        {
+          y: 0,
+          opacity: 1,
+          rotationX: 0,
+          duration: 1,
+          stagger: 0.2,
+          ease: "power4.out",
+          // 3D transforms keep the cards on composited layers; release them.
+          clearProps: "transform",
+          scrollTrigger: {
+            trigger: root.querySelector(".achievements-grid"),
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        },
+      );
+    }, root);
+
+    return () => ctx.revert();
   }, []);
 
   const achievements = [

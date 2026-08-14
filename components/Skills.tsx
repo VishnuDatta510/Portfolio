@@ -101,111 +101,136 @@ export default function Skills() {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!sectionRef.current) return;
+    const root = sectionRef.current;
+    if (!root) return;
 
-    const categories = sectionRef.current.querySelectorAll(".skill-category");
+    const ctx = gsap.context(() => {
+      const categories = gsap.utils.toArray<HTMLElement>(".skill-category");
 
-    categories.forEach((category) => {
-      const title = category.querySelector(".skill-category-title");
-      const items = category.querySelectorAll(".skill-item");
-      if (!title || items.length === 0) return;
+      /* Measure every category in one pass before touching any style, so the
+         setup costs a single layout instead of one reflow per element. */
+      const measured = categories.map((category) => {
+        const title = category.querySelector<HTMLElement>(
+          ".skill-category-title",
+        );
+        const items = gsap.utils.toArray<HTMLElement>(
+          category.querySelectorAll(".skill-item"),
+        );
+        if (!title || items.length === 0) return null;
 
-      const catRect = category.getBoundingClientRect();
-      const cx = catRect.width / 2;
-      const cy = Math.min(catRect.height / 2, 200);
+        const catRect = category.getBoundingClientRect();
+        const cx = catRect.width / 2;
+        const cy = Math.min(catRect.height / 2, 200);
 
-      const getDx = (el: Element) => {
-        const rect = el.getBoundingClientRect();
-        const elCx = rect.left - catRect.left + rect.width / 2;
-        return cx - elCx;
-      };
-      const getDy = (el: Element) => {
-        const rect = el.getBoundingClientRect();
-        const elCy = rect.top - catRect.top + rect.height / 2;
-        return cy - elCy;
-      };
+        const getDx = (el: Element) => {
+          const rect = el.getBoundingClientRect();
+          return cx - (rect.left - catRect.left + rect.width / 2);
+        };
+        const getDy = (el: Element) => {
+          const rect = el.getBoundingClientRect();
+          return cy - (rect.top - catRect.top + rect.height / 2);
+        };
 
-      const titleDx = getDx(title);
-      const titleDy = getDy(title);
-
-      gsap.set(title, {
-        x: titleDx,
-        y: titleDy,
-        scale: 2.5,
-        autoAlpha: 0,
-        transformOrigin: "center center",
+        return {
+          category,
+          title,
+          items,
+          getDx,
+          getDy,
+          titleOffset: { dx: getDx(title), dy: getDy(title) },
+          itemOffsets: items.map((item) => ({
+            dx: getDx(item),
+            dy: getDy(item),
+          })),
+        };
       });
 
-      items.forEach((item) => {
-        gsap.set(item, {
-          x: getDx(item),
-          y: getDy(item),
-          scale: 0.2,
+      measured.forEach((entry) => {
+        if (!entry) return;
+        const { category, title, items, titleOffset, itemOffsets, getDx, getDy } =
+          entry;
+
+        gsap.set(title, {
+          x: titleOffset.dx,
+          y: titleOffset.dy,
+          scale: 2.5,
           autoAlpha: 0,
-          zIndex: 0,
+          transformOrigin: "center center",
         });
-      });
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: category,
-          start: "top 65%",
-          toggleActions: "play none none none",
-        },
-      });
+        items.forEach((item, i) => {
+          gsap.set(item, {
+            x: itemOffsets[i].dx,
+            y: itemOffsets[i].dy,
+            scale: 0.2,
+            autoAlpha: 0,
+            zIndex: 0,
+          });
+        });
 
-      tl.to(title, {
-        autoAlpha: 1,
-        scale: 3,
-        duration: 0.3,
-        ease: "back.out(1.5)",
-      });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: category,
+            start: "top 65%",
+            toggleActions: "play none none none",
+          },
+        });
 
-      const angleStep = (Math.PI * 2) / items.length;
-      const radius = 180;
-
-      tl.to(
-        items,
-        {
-          x: (i, el) =>
-            getDx(el) +
-            Math.cos(angleStep * i) * radius * (Math.random() * 0.3 + 0.85),
-          y: (i, el) =>
-            getDy(el) +
-            Math.sin(angleStep * i) * radius * (Math.random() * 0.3 + 0.85),
-          scale: 1,
+        tl.to(title, {
           autoAlpha: 1,
-          duration: 0.15,
-          stagger: 0.02,
-          ease: "power3.out",
-        },
-        "+=0.1",
-      );
+          scale: 3,
+          duration: 0.3,
+          ease: "back.out(1.5)",
+        });
 
-      tl.to(
-        title,
-        {
-          x: 0,
-          y: 0,
-          scale: 1,
-          duration: 0.7,
-          ease: "power3.inOut",
-        },
-        "+=0.2",
-      );
+        const angleStep = (Math.PI * 2) / items.length;
+        const radius = 180;
 
-      tl.to(
-        items,
-        {
-          x: 0,
-          y: 0,
-          zIndex: 1,
-          duration: 0.7,
-          ease: "power3.inOut",
-        },
-        "<",
-      );
-    });
+        tl.to(
+          items,
+          {
+            x: (i, el) =>
+              getDx(el) +
+              Math.cos(angleStep * i) * radius * (Math.random() * 0.3 + 0.85),
+            y: (i, el) =>
+              getDy(el) +
+              Math.sin(angleStep * i) * radius * (Math.random() * 0.3 + 0.85),
+            scale: 1,
+            autoAlpha: 1,
+            duration: 0.15,
+            stagger: 0.02,
+            ease: "power3.out",
+          },
+          "+=0.1",
+        );
+
+        tl.to(
+          title,
+          {
+            x: 0,
+            y: 0,
+            scale: 1,
+            duration: 0.7,
+            ease: "power3.inOut",
+          },
+          "+=0.2",
+        );
+
+        tl.to(
+          items,
+          {
+            x: 0,
+            y: 0,
+            zIndex: 1,
+            duration: 0.7,
+            ease: "power3.inOut",
+          },
+          "<",
+        );
+      });
+    }, root);
+
+    return () => ctx.revert();
   }, []);
 
   return (
