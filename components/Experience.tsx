@@ -20,15 +20,17 @@ const EXPERIENCE = [
   {
     role: "SDE Intern",
     org: "Soundverse AI",
-    period: "APR 2026 → PRESENT",
+    period: "APR 2026 → OCT 2026",
     location: "Remote",
     bullets: [
-      "Contributing to Soundverse 3.0: overhauling platform architecture, modernizing the web platform and re-engineering media tooling.",
-      "Built a Media Stitching API that turns editing prompts into automated FFmpeg audio and video pipelines: timeline composition, trims, overlays and transitions.",
-      "Architected a transcription and speaker-diarization API, extending Whisper from 25MB to 500MB+ audio with silence-aware chunking pipelines.",
-      "Engineering the backend for Music Distribution: scalable APIs and orchestration services for release validation, metadata processing and distribution workflows.",
+      "Scaled a Whisper transcription and speaker-diarization pipeline from 25 MB to 500 MB inputs with silence-aware chunking, parallel transcription and live progress over Server-Sent Events.",
+      "Built core services of the Music Distribution pipeline that releases artists' songs to Spotify, Apple Music and YouTube, behind a fail-closed quality gate of 7 weighted checks (loudness, ISRC conflicts, AI provenance, copyright, AWS Rekognition moderation).",
+      "Built the Media Converter end to end for audio, video and images: background jobs with live Socket.IO progress, per-plan Redis rate limits and token billing; fixed a proxy that stalled large files for 40–200 s.",
+      "Co-built the move from MP4 to HLS over a CDN, benchmarking seeks 7.6x faster and first byte 6x faster.",
+      "Designed a cross-channel notification system where one record per event feeds the in-app bell, Firebase push and Amazon SES email, cancelling held emails once the user reads it anywhere.",
+      "Worked across gRPC/Protobuf and REST API design, PostgreSQL schemas and integrations like Didit identity verification, Sign in with Apple and Google Play Billing.",
     ],
-    current: true,
+    current: false,
   },
 ];
 

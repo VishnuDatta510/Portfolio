@@ -17,11 +17,16 @@ import NoiseBackground from "@/components/NoiseBackground";
 export default function Home() {
   const [splineLoaded, setSplineLoaded] = useState(false);
   const [preloaderDone, setPreloaderDone] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
 
   const isReady = splineLoaded && preloaderDone;
 
   const handlePreloaderComplete = useCallback(() => {
     setPreloaderDone(true);
+  }, []);
+
+  const handleIntroDone = useCallback(() => {
+    setIntroDone(true);
   }, []);
 
   const handleSplineLoad = useCallback(() => {
@@ -51,13 +56,18 @@ export default function Home() {
       <NoiseBackground />
       <Preloader
         onComplete={handlePreloaderComplete}
+        onIntroDone={handleIntroDone}
         isSplineLoaded={splineLoaded}
       />
       <CustomCursor />
       <Navbar isReady={isReady} />
       <SmoothScroll>
         <main style={{ position: "relative", zIndex: 1 }}>
-          <Hero isReady={isReady} onSplineLoad={handleSplineLoad} />
+          <Hero
+            isReady={isReady}
+            loadScene={introDone}
+            onSplineLoad={handleSplineLoad}
+          />
           <Marquee />
           <About />
           <Experience />

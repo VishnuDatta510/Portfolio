@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -9,8 +9,20 @@ interface NavbarProps {
     isReady: boolean;
 }
 
+const LINKS = [
+    { id: "about", label: "About" },
+    { id: "experience", label: "Experience" },
+    { id: "skills", label: "Skills" },
+    { id: "work", label: "Projects" },
+    { id: "achievements", label: "Achievements" },
+    { id: "contact", label: "Contact" },
+];
+
 export default function Navbar({ isReady }: NavbarProps) {
     const navRef = useRef<HTMLElement>(null);
+    const [open, setOpen] = useState(false);
+
+    const close = useCallback(() => setOpen(false), []);
 
     useEffect(() => {
         if (!isReady || !navRef.current) return;
@@ -33,44 +45,111 @@ export default function Navbar({ isReady }: NavbarProps) {
         return () => trigger.kill();
     }, [isReady]);
 
+    useEffect(() => {
+        document.body.classList.toggle("menu-open", open);
+        window.dispatchEvent(
+            new CustomEvent(open ? "portfolio:lock-scroll" : "portfolio:unlock-scroll"),
+        );
+
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") close();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => {
+            window.removeEventListener("keydown", onKey);
+            document.body.classList.remove("menu-open");
+            window.dispatchEvent(new CustomEvent("portfolio:unlock-scroll"));
+        };
+    }, [open, close]);
+
     const scrollTo = (id: string) => {
+        close();
         const el = document.getElementById(id);
-        el?.scrollIntoView({ behavior: "smooth" });
+        if (!el) return;
+        requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: "smooth" });
+        });
     };
 
     return (
-        <nav ref={navRef} className="navbar">
-            <div className="navbar-logo hoverable" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>VD</div>
+        <>
+        <nav ref={navRef} className={`navbar${open ? " navbar--open" : ""}`}>
+            <div
+                className="navbar-logo hoverable"
+                onClick={() => {
+                    close();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+            >
+                VD
+            </div>
+
             <div className="navbar-links">
                 <a
                     href="/resume.pdf"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="navbar-link hoverable"
-                    style={{ textDecoration: 'none' }}
+                    style={{ textDecoration: "none" }}
                 >
                     Resume
                 </a>
-                <button className="navbar-link hoverable" onClick={() => scrollTo("about")}>
-                    About
-                </button>
-                <button className="navbar-link hoverable" onClick={() => scrollTo("experience")}>
-                    Experience
-                </button>
-                <button className="navbar-link hoverable" onClick={() => scrollTo("skills")}>
-                    Skills
-                </button>
-                <button className="navbar-link hoverable" onClick={() => scrollTo("work")}>
-                    Projects
-                </button>
-                <button className="navbar-link hoverable" onClick={() => scrollTo("achievements")}>
-                    Achievements
-                </button>
-                <button className="navbar-link hoverable" onClick={() => scrollTo("contact")}>
-                    Contact
-                </button>
+                {LINKS.map((link) => (
+                    <button
+                        key={link.id}
+                        className="navbar-link hoverable"
+                        onClick={() => scrollTo(link.id)}
+                    >
+                        {link.label}
+                    </button>
+                ))}
             </div>
 
+            <div className="navbar-mobile-actions">
+                <a
+                    href="/resume.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="navbar-link navbar-resume-mobile hoverable"
+                    style={{ textDecoration: "none" }}
+                >
+                    Resume
+                </a>
+                <button
+                    className="navbar-burger hoverable"
+                    aria-label={open ? "Close menu" : "Open menu"}
+                    aria-expanded={open}
+                    onClick={() => setOpen((v) => !v)}
+                >
+                    <span />
+                    <span />
+                </button>
+            </div>
         </nav>
+
+        <div
+            className={`navbar-overlay${open ? " is-open" : ""}`}
+            aria-hidden={!open}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) close();
+            }}
+        >
+            <div className="navbar-overlay-links">
+                {LINKS.map((link, i) => (
+                    <button
+                        key={link.id}
+                        className="navbar-overlay-link hoverable"
+                        style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+                        onClick={() => scrollTo(link.id)}
+                    >
+                        <span className="navbar-overlay-index">
+                            {String(i + 1).padStart(2, "0")}
+                        </span>
+                        {link.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+        </>
     );
 }

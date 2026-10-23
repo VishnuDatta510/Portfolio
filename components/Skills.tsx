@@ -7,11 +7,13 @@ import {
   SiNextdotjs,
   SiNodedotjs,
   SiExpress,
-  SiPytorch,
+  SiFastapi,
+  SiDjango,
   SiTailwindcss,
   SiJavascript,
   SiTypescript,
   SiPython,
+  SiC,
   SiHtml5,
   SiCss,
   SiMongodb,
@@ -19,21 +21,23 @@ import {
   SiRedis,
   SiMysql,
   SiFirebase,
-  SiSupabase,
   SiGooglegemini,
+  SiOpenai,
+  SiFfmpeg,
+  SiCelery,
   SiSocketdotio,
   SiGithub,
   SiPostman,
-  SiFigma,
   SiGit,
   SiGooglechrome,
-  SiVercel,
   SiShadcnui,
   SiPrisma,
   SiDocker,
   SiVite,
 } from "react-icons/si";
-import { FaJava } from "react-icons/fa";
+import { FaJava, FaAws } from "react-icons/fa";
+import { VscAzure } from "react-icons/vsc";
+import { TbApi } from "react-icons/tb";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -41,58 +45,61 @@ const skillCategories = [
   {
     title: "Languages",
     skills: [
+      { name: "Python", icon: SiPython },
+      { name: "TypeScript", icon: SiTypescript },
+      { name: "JavaScript", icon: SiJavascript },
       { name: "Java", icon: FaJava },
+      { name: "C", icon: SiC },
+      { name: "SQL", icon: SiMysql },
       { name: "HTML", icon: SiHtml5 },
       { name: "CSS", icon: SiCss },
-      { name: "JavaScript", icon: SiJavascript },
-      { name: "TypeScript", icon: SiTypescript },
-      { name: "Python", icon: SiPython },
-      { name: "SQL", icon: SiMysql },
     ],
   },
   {
-    title: "Frameworks & Libraries",
+    title: "Backend",
+    skills: [
+      { name: "FastAPI", icon: SiFastapi },
+      { name: "Node.js", icon: SiNodedotjs },
+      { name: "Express.js", icon: SiExpress },
+      { name: "Django REST", icon: SiDjango },
+      { name: "gRPC & Protobuf", icon: TbApi },
+      { name: "WebSockets", icon: SiSocketdotio },
+      { name: "Celery", icon: SiCelery },
+    ],
+  },
+  {
+    title: "Frontend",
     skills: [
       { name: "React.js", icon: SiReact },
       { name: "Next.js", icon: SiNextdotjs },
-      { name: "Node.js", icon: SiNodedotjs },
-      { name: "Express.js", icon: SiExpress },
       { name: "Tailwind", icon: SiTailwindcss },
       { name: "ShadCN UI", icon: SiShadcnui },
-      { name: "Prisma", icon: SiPrisma },
+      { name: "Vite", icon: SiVite },
+      { name: "Chrome Extensions", icon: SiGooglechrome },
     ],
   },
   {
-    title: "Databases",
+    title: "Databases & Cloud",
     skills: [
-      { name: "MongoDB", icon: SiMongodb },
       { name: "PostgreSQL", icon: SiPostgresql },
+      { name: "MongoDB", icon: SiMongodb },
       { name: "Redis", icon: SiRedis },
-      { name: "MySQL", icon: SiMysql },
-      { name: "FireBase", icon: SiFirebase },
-      { name: "SupaBase", icon: SiSupabase },
+      { name: "Prisma", icon: SiPrisma },
+      { name: "AWS", icon: FaAws },
+      { name: "Firebase", icon: SiFirebase },
+      { name: "Azure", icon: VscAzure },
+      { name: "Docker", icon: SiDocker },
     ],
   },
   {
-    title: "Cloud & APIs",
+    title: "AI & Tools",
     skills: [
-      { name: "REST APIs", icon: SiNodedotjs },
+      { name: "OpenAI Whisper", icon: SiOpenai },
       { name: "Gemini API", icon: SiGooglegemini },
-      { name: "Stream SDK", icon: SiReact },
-      { name: "WebSockets", icon: SiSocketdotio },
-      { name: "Vercel", icon: SiVercel },
-    ],
-  },
-  {
-    title: "Developer Tools",
-    skills: [
+      { name: "FFmpeg", icon: SiFfmpeg },
       { name: "Git", icon: SiGit },
       { name: "GitHub", icon: SiGithub },
       { name: "Postman", icon: SiPostman },
-      { name: "Chrome Extensions", icon: SiGooglechrome },
-      { name: "Figma", icon: SiFigma },
-      { name: "Docker", icon: SiDocker },
-      { name: "Vite", icon: SiVite },
     ],
   },
 ];
@@ -150,10 +157,47 @@ export default function Skills() {
         const { category, title, items, titleOffset, itemOffsets, getDx, getDy } =
           entry;
 
+        const compact = window.innerWidth < 768;
+
+        if (compact) {
+          gsap.set(title, { autoAlpha: 0, y: 24, scale: 1 });
+          gsap.set(items, { autoAlpha: 0, y: 20, scale: 1 });
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: category,
+              start: "top 65%",
+              toggleActions: "play none none none",
+            },
+          });
+
+          tl.to(title, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.5,
+            ease: "power3.out",
+          });
+
+          tl.to(
+            items,
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.45,
+              stagger: 0.04,
+              ease: "power3.out",
+              clearProps: "transform",
+            },
+            "-=0.25",
+          );
+
+          return;
+        }
+
         gsap.set(title, {
           x: titleOffset.dx,
           y: titleOffset.dy,
-          scale: 2.5,
+          scale: compact ? 1.4 : 2.5,
           autoAlpha: 0,
           transformOrigin: "center center",
         });
@@ -178,13 +222,13 @@ export default function Skills() {
 
         tl.to(title, {
           autoAlpha: 1,
-          scale: 3,
+          scale: compact ? 1.6 : 3,
           duration: 0.3,
           ease: "back.out(1.5)",
         });
 
         const angleStep = (Math.PI * 2) / items.length;
-        const radius = 180;
+        const radius = compact ? 80 : 180;
 
         tl.to(
           items,

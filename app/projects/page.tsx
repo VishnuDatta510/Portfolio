@@ -16,15 +16,33 @@ gsap.registerPlugin(ScrollTrigger);
 const allProjects = [
   {
     id: 1,
+    name: "Audira AI",
+    description:
+      "AI technical interviewer that runs coding, project and fundamentals rounds against your résumé, with code sandboxed on Judge0 in 13 languages.",
+    year: "2026",
+    github: "https://github.com/VishnuDatta510/Audira",
+    liveLink: "https://audira-ai.vercel.app/",
+  },
+  {
+    id: 2,
     name: "CodeRep",
     description:
-      "Full-stack app & Chrome Extension using spaced repetition to master LeetCode algorithms.",
+      "Next.js app & Chrome Extension bringing spaced repetition to LeetCode, used by 20+ daily active users.",
     year: "2026",
     github: "https://github.com/VishnuDatta510/CodeRep",
     liveLink: "https://coderep.vercel.app/",
   },
   {
-    id: 2,
+    id: 3,
+    name: "TaskLane",
+    description:
+      "Multi-tenant Jira-style tracker with role-based access, audit logs, Redis-cached analytics and Celery background jobs.",
+    year: "2026",
+    github: "https://github.com/VishnuDatta510/Tasklane",
+    liveLink: "",
+  },
+  {
+    id: 4,
     name: "AlgoClash",
     description:
       "Real-time 1v1 competitive coding arena featuring live execution and dynamic Elo ranking.",
@@ -33,7 +51,7 @@ const allProjects = [
     liveLink: "",
   },
   {
-    id: 3,
+    id: 5,
     name: "FluenSee",
     description:
       "AI-powered language tutor with real-time video calls, peer-to-peer chat, and interactive flashcards.",
@@ -42,7 +60,7 @@ const allProjects = [
     liveLink: "https://fluensee.onrender.com/",
   },
   {
-    id: 4,
+    id: 6,
     name: "WhisperWall",
     description:
       "Secure, real-time anonymous note-sharing board featuring distributed rate limiting via Redis.",
@@ -51,7 +69,7 @@ const allProjects = [
     liveLink: "https://wishper-wall.vercel.app/",
   },
   {
-    id: 5,
+    id: 7,
     name: "PrimeSignal",
     description:
       "Scalable crypto trading REST API featuring role-based access control and Redis caching.",
@@ -60,7 +78,7 @@ const allProjects = [
     liveLink: "",
   },
   {
-    id: 6,
+    id: 8,
     name: "Telugu Spell Checker",
     description:
       "Intelligent NLP spell checker for Telugu providing semantic-based ranked correction candidates.",

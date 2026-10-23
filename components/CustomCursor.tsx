@@ -6,7 +6,7 @@ export default function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
   const circleRef = useRef<HTMLDivElement>(null);
   const viewTargetsSelector =
-    ".project-row, .achievement-card, .project-grid-card";
+    ".project-row, .achv-row--link, .project-grid-card";
 
   useEffect(() => {
     const dot = dotRef.current;

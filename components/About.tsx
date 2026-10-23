@@ -105,12 +105,12 @@ export default function About() {
             <div className="about-grid">
                 <div className="about-text">
                     {wrapWords(
-                        "I'm a passionate web developer dedicated to transforming ideas into exceptional digital experiences. With a keen eye for design and a love for clean code, I create websites that not only look stunning but also perform flawlessly."
+                        "I'm a full-stack engineer who enjoys building the systems behind great products, from media pipelines and APIs to the interfaces people actually touch. I recently wrapped up a Software Development Engineer internship at Soundverse AI, shipping production backends for music distribution, transcription and media processing."
                     )}
                     <br />
                     <br />
                     {wrapWords(
-                        "Every project is an opportunity to push creative boundaries while maintaining the highest standards of usability and performance."
+                        "I care about software that is fast, reliable and a pleasure to use, and I'm always exploring where AI can make it better."
                     )}
 
                     <div className="about-education">
@@ -119,7 +119,7 @@ export default function About() {
                             <h3 className="education-institute">Indian Institute of Information Technology Sricity</h3>
                             <p className="education-date">Aug 2023 - May 2027</p>
                         </div>
-                        <p className="education-title">Bachelors of Technology in Computer Science</p>
+                        <p className="education-title">Bachelor of Technology in Computer Science and Engineering</p>
                         <p className="education-desc">
                             Currently pursuing Bachelor of Technology with a focus on computer science and engineering. Learning New Technologies and exploring various domains in computer science.
                         </p>

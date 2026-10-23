@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import dynamic from "next/dynamic";
@@ -13,13 +13,26 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface HeroProps {
   isReady: boolean;
+  /** Mount the scene only once the preloader's letters have settled: its
+      script eval and scene build stall the main thread. */
+  loadScene: boolean;
   onSplineLoad: () => void;
 }
 
-export default function Hero({ isReady, onSplineLoad }: HeroProps) {
+export default function Hero({ isReady, loadScene, onSplineLoad }: HeroProps) {
   const heroRef = useRef<HTMLElement>(null);
   const hasAnimated = useRef(false);
   const splineApp = useRef<Application | null>(null);
+  const [showSpline, setShowSpline] = useState(false);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    if (mobile) {
+      onSplineLoad();
+      return;
+    }
+    if (loadScene) setShowSpline(true);
+  }, [loadScene, onSplineLoad]);
 
   useEffect(() => {
     if (!isReady || hasAnimated.current || !heroRef.current) return;
@@ -123,45 +136,32 @@ export default function Hero({ isReady, onSplineLoad }: HeroProps) {
         position: "relative",
       }}
     >
-      {/* Native Spline background */}
-      <div
-        className="hero-spline-wrap"
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 0,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          pointerEvents: "auto",
-        }}
-      >
-        <Spline
-          scene="https://prod.spline.design/sF4UdzWuD4EmnRZ2/scene.splinecode"
-          onLoad={onLoad}
-        />
-      </div>
+      {showSpline && (
+        <div className="hero-spline-wrap">
+          <Spline
+            scene="https://prod.spline.design/sF4UdzWuD4EmnRZ2/scene.splinecode"
+            onLoad={onLoad}
+          />
+        </div>
+      )}
 
-      {/* Content overlaid on top */}
       <div className="hero-inner" style={{ pointerEvents: "none" }}>
         <div className="hero-content-left">
-          {/* Main heading */}
           <h1 className="hero-heading">
             <span className="hero-heading-line">
               <span>Crafting</span>
             </span>
             <span className="hero-heading-line hero-heading-line--accent">
-              <span>
+              <span className="hero-heading-accent-group">
                 <em className="italic">Digital</em>
+                <span className="hero-heading-accent" aria-hidden="true" />
               </span>
-              <span className="hero-heading-accent" />
             </span>
             <span className="hero-heading-line">
               <span>Experiences</span>
             </span>
           </h1>
 
-          {/* Role tag */}
           <p className="hero-role">Full-Stack Developer &amp; AI enthusiast</p>
 
           <span className="hero-divider" />
@@ -172,6 +172,8 @@ export default function Hero({ isReady, onSplineLoad }: HeroProps) {
           </p>
         </div>
       </div>
+
+      {showSpline && <div className="hero-spline-badge" aria-hidden="true" />}
 
       <div className="hero-scroll-cover">
         <span>Scroll to explore</span>

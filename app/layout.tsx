@@ -22,6 +22,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#09090e",
   colorScheme: "dark",
 };
@@ -37,6 +39,15 @@ export default function RootLayout({
         {/* The 3D scene is fetched client-side; open the sockets early. */}
         <link rel="preconnect" href="https://prod.spline.design" />
         <link rel="preconnect" href="https://unpkg.com" crossOrigin="anonymous" />
+        {/* Hero mounts Spline only after the preloader intro, so fetch the
+            scene now; mobile never shows it. */}
+        <link
+          rel="preload"
+          href="https://prod.spline.design/sF4UdzWuD4EmnRZ2/scene.splinecode"
+          as="fetch"
+          crossOrigin="anonymous"
+          media="(min-width: 769px)"
+        />
       </head>
       <body
         className={`${spaceGrotesk.variable} ${inter.variable}`}
