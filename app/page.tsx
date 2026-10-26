@@ -1,7 +1,5 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import SmoothScroll from "@/components/SmoothScroll";
-import CustomCursor from "@/components/CustomCursor";
 import Preloader from "@/components/Preloader";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -12,71 +10,41 @@ import Projects from "@/components/Projects";
 import Skills from "@/components/Skills";
 import Achievements from "@/components/Achievements";
 import Footer from "@/components/Footer";
-import NoiseBackground from "@/components/NoiseBackground";
+import { appMounted } from "@/components/PageTransition";
 
 export default function Home() {
-  const [splineLoaded, setSplineLoaded] = useState(false);
-  const [preloaderDone, setPreloaderDone] = useState(false);
-  const [introDone, setIntroDone] = useState(false);
+  // The preloader belongs to a hard load of this page; arriving from /projects lands straight on it.
+  const [showLoader] = useState(() => !appMounted);
+  const [ready, setReady] = useState(!showLoader);
 
-  const isReady = splineLoaded && preloaderDone;
-
-  const handlePreloaderComplete = useCallback(() => {
-    setPreloaderDone(true);
-  }, []);
-
-  const handleIntroDone = useCallback(() => {
-    setIntroDone(true);
-  }, []);
-
-  const handleSplineLoad = useCallback(() => {
-    setSplineLoaded(true);
-  }, []);
+  const handleReveal = useCallback(() => setReady(true), []);
 
   useEffect(() => {
-    if ("scrollRestoration" in history) {
-      history.scrollRestoration = "manual";
-    }
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    if (!showLoader) return;
 
     requestAnimationFrame(() => {
-      const hash = window.location.hash;
-      if (hash === "#work") {
-        const element = document.getElementById("work");
-        if (element) {
-          element.scrollIntoView({ behavior: "instant" });
-        }
-      } else {
-        window.scrollTo(0, 0);
-      }
+      const hash = window.location.hash.slice(1);
+      const target = hash && document.getElementById(hash);
+      if (target) target.scrollIntoView({ behavior: "instant" });
+      else window.scrollTo(0, 0);
     });
-  }, []);
+  }, [showLoader]);
 
   return (
     <>
-      <NoiseBackground />
-      <Preloader
-        onComplete={handlePreloaderComplete}
-        onIntroDone={handleIntroDone}
-        isSplineLoaded={splineLoaded}
-      />
-      <CustomCursor />
-      <Navbar isReady={isReady} />
-      <SmoothScroll>
-        <main style={{ position: "relative", zIndex: 1 }}>
-          <Hero
-            isReady={isReady}
-            loadScene={introDone}
-            onSplineLoad={handleSplineLoad}
-          />
-          <Marquee />
-          <About />
-          <Experience />
-          <Skills />
-          <Projects />
-          <Achievements />
-          <Footer />
-        </main>
-      </SmoothScroll>
+      {showLoader && <Preloader onReveal={handleReveal} />}
+      <Navbar isReady={ready} />
+      <main id="main">
+        <Hero isReady={ready} />
+        <Marquee />
+        <About />
+        <Experience />
+        <Skills />
+        <Projects />
+        <Achievements />
+      </main>
+      <Footer />
     </>
   );
 }

@@ -1,195 +1,150 @@
 "use client";
-import { useRef, useEffect, useState } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { useRef, useState } from "react";
+import { gsap, useGSAP, scramble, reducedMotion } from "@/lib/motion";
 
 interface PreloaderProps {
-    onComplete: () => void;
-    /** Fires once the letters have risen; the 3D scene mounts then. */
-    onIntroDone: () => void;
-    isSplineLoaded: boolean;
+  /** Fires as the sheet starts lifting, so the hero can draw in under it. */
+  onReveal: () => void;
 }
 
-export default function Preloader({ onComplete, onIntroDone, isSplineLoaded }: PreloaderProps) {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const nameRef = useRef<HTMLDivElement>(null);
-    const layerRef = useRef<HTMLDivElement>(null);
-    const exitStarted = useRef(false);
+const STAGES: [number, string][] = [
+  [0, "Setting up grid"],
+  [34, "Plotting layers"],
+  [68, "Annotating"],
+  [100, "Ready"],
+];
 
-    const [introDone, setIntroDone] = useState(false);
-    const [waitedLongEnough, setWaitedLongEnough] = useState(false);
+const TITLE_BLOCK = [
+  ["Drawn", "V. Datta"],
+  ["Sheet", "01 of 07"],
+  ["Scale", "1 : 1"],
+  ["Rev.", "2026.10"],
+];
 
-    /* A cold cache or slow connection must never strand the visitor on the
-       loader, so the reveal proceeds with or without the 3D scene. */
-    useEffect(() => {
-        if (isSplineLoaded) return;
-        const timer = window.setTimeout(() => setWaitedLongEnough(true), 5500);
-        return () => window.clearTimeout(timer);
-    }, [isSplineLoaded]);
+export default function Preloader({ onReveal }: PreloaderProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [gone, setGone] = useState(false);
 
-    useEffect(() => {
-        return () => {
-            document.body.style.overflow = "";
-        };
-    }, []);
+  useGSAP(
+    () => {
+      const root = ref.current;
+      if (!root) return;
 
-    useGSAP(
-        () => {
-            const container = containerRef.current;
-            const name = nameRef.current;
-            if (!container || !name) return;
+      if (reducedMotion()) {
+        onReveal();
+        setGone(true);
+        return;
+      }
 
-            document.body.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+      const count = root.querySelector<HTMLElement>(".loader-count-value")!;
+      const status = root.querySelector<HTMLElement>(".loader-status-text")!;
+      const progress = { v: 0 };
+      let stage = 0;
 
-            gsap.set(name, { opacity: 1 });
+      const tl = gsap.timeline({
+        paused: true,
+        defaults: { ease: "expo.inOut" },
+        onComplete: () => setGone(true),
+      });
 
-            container.querySelectorAll<HTMLElement>(".preloader-fade-group").forEach((el) => {
-                el.style.width = el.getBoundingClientRect().width + "px";
-            });
-            const space = container.querySelector<HTMLElement>(".preloader-space");
-            if (space) space.style.width = space.getBoundingClientRect().width + "px";
-
-            /* Hydration runs in the same task that creates this timeline, so
-               start it on a fresh frame or the first ~100ms of the rise is
-               skipped. */
-            const tlIntro = gsap.timeline({
-                paused: true,
-                defaults: { ease: "power3.inOut" },
-                onComplete: () => setIntroDone(true),
-            });
-
-            tlIntro.from(".preloader-letter", {
-                yPercent: 110,
-                rotate: 8,
-                stagger: 0.045,
-                duration: 1,
-                ease: "expo.out",
-            })
-                .from(".preloader-line", { scaleX: 0, duration: 0.9, ease: "expo.inOut" }, 0.25)
-                .from(".preloader-caption", {
-                    yPercent: 100,
-                    opacity: 0,
-                    stagger: 0.08,
-                    duration: 0.6,
-                    ease: "power3.out",
-                }, 0.55)
-                .call(onIntroDone)
-                .to({}, { duration: 1.2 });
-
-            const frame = requestAnimationFrame(() => tlIntro.play());
-            return () => cancelAnimationFrame(frame);
-        },
-        { scope: containerRef }
-    );
-
-    /* Building the Spline scene blocks the main thread for seconds, so the
-       full name holds still until it is done; anything animating during that
-       block would visibly freeze and jump. */
-    useGSAP(() => {
-        if (exitStarted.current) return;
-        if (!introDone || !(isSplineLoaded || waitedLongEnough)) return;
-        exitStarted.current = true;
-
-        const container = containerRef.current;
-        const name = nameRef.current;
-        if (!container || !name) return;
-
-        const tlExit = gsap.timeline({
-            defaults: { ease: "power3.inOut" },
-            onComplete: () => {
-                document.body.style.overflow = "";
-                onComplete();
+      tl.from(".loader-edge--h", { scaleX: 0, duration: 1.1, stagger: 0.1 })
+        .from(".loader-edge--v", { scaleY: 0, duration: 1.1, stagger: 0.1 }, 0.1)
+        .from(".loader-mark", { scale: 0, opacity: 0, duration: 0.6, stagger: 0.06, ease: "back.out(2)" }, 0.4)
+        .from(".loader-reveal", { yPercent: 110, duration: 0.8, stagger: 0.05, ease: "expo.out" }, 0.5)
+        .to(
+          progress,
+          {
+            v: 100,
+            duration: 1.7,
+            ease: "power2.inOut",
+            onUpdate: () => {
+              const v = Math.round(progress.v);
+              count.textContent = String(v).padStart(3, "0");
+              const next = STAGES.findLastIndex(([at]) => v >= at);
+              if (next !== stage) {
+                stage = next;
+                status.textContent = STAGES[next][1];
+                scramble(status, { duration: 0.45 });
+              }
             },
-        });
+          },
+          0.6,
+        )
+        .fromTo(".loader-bar-fill", { scaleX: 0 }, { scaleX: 1, duration: 1.7, ease: "power2.inOut" }, 0.6)
+        .to(".loader-reveal", { yPercent: -110, duration: 0.55, stagger: 0.03, ease: "power3.in" }, "+=0.15")
+        .to(".loader-mark", { scale: 0, opacity: 0, duration: 0.4, ease: "power3.in" }, "<")
+        .to(".loader-edge--h", { scaleX: 0, transformOrigin: "right center", duration: 0.6 }, "<0.1")
+        .to(".loader-edge--v", { scaleY: 0, transformOrigin: "center bottom", duration: 0.6 }, "<")
+        .addLabel("lift", "-=0.1")
+        .call(
+          () => {
+            document.body.style.overflow = "";
+            onReveal();
+          },
+          [],
+          "lift",
+        )
+        .to(root, { clipPath: "inset(0% 0% 100% 0%)", duration: 1, ease: "expo.inOut" }, "lift")
+        .fromTo(".loader-scan", { yPercent: 0 }, { yPercent: -100, duration: 1, ease: "expo.inOut" }, "lift");
 
-        tlExit
-            .to(".preloader-caption", {
-                yPercent: -100,
-                opacity: 0,
-                stagger: 0.05,
-                duration: 0.4,
-                ease: "power3.in",
-            })
-            .to(".preloader-line", {
-                scaleX: 0,
-                transformOrigin: "right center",
-                duration: 0.5,
-                ease: "expo.in",
-            }, 0)
-            .to(".preloader-fade", {
-                yPercent: -110,
-                rotate: -6,
-                stagger: { each: 0.025, from: "center" },
-                duration: 0.45,
-                ease: "power3.in",
-            }, 0.1)
-            .to(".preloader-fade-group", { width: 0, duration: 0.55, ease: "expo.inOut" }, "-=0.2")
-            .to(".preloader-space", { width: 0, duration: 0.55, ease: "expo.inOut" }, "<")
-            .to(name, {
-                scale: 1.15,
-                duration: 0.35,
-                ease: "back.out(2.5)",
-            }, "-=0.15")
-            .to(".preloader-keep", {
-                yPercent: -110,
-                stagger: 0.07,
-                duration: 0.5,
-                ease: "power4.in",
-            }, "+=0.1")
-            .to(container, {
-                clipPath: "inset(0 0 100% 0)",
-                duration: 0.7,
-                ease: "expo.inOut",
-            }, "-=0.2")
-            .to(layerRef.current, {
-                clipPath: "inset(0 0 100% 0)",
-                duration: 0.7,
-                ease: "expo.inOut",
-            }, "-=0.55");
+      // Hydration shares this task; start on a fresh frame so nothing skips.
+      const frame = requestAnimationFrame(() => tl.play());
+      return () => {
+        cancelAnimationFrame(frame);
+        document.body.style.overflow = "";
+      };
+    },
+    { scope: ref },
+  );
 
-    }, [introDone, isSplineLoaded, waitedLongEnough]);
+  if (gone) return null;
 
+  return (
+    <div ref={ref} className="loader" role="status" aria-label="Loading">
+      <div className="loader-frame" aria-hidden="true">
+        <span className="loader-edge loader-edge--h loader-edge--t" />
+        <span className="loader-edge loader-edge--h loader-edge--b" />
+        <span className="loader-edge loader-edge--v loader-edge--l" />
+        <span className="loader-edge loader-edge--v loader-edge--r" />
+        <span className="loader-mark loader-mark--tl" />
+        <span className="loader-mark loader-mark--tr" />
+        <span className="loader-mark loader-mark--bl" />
+        <span className="loader-mark loader-mark--br" />
+      </div>
 
-    const makeLetters = (text: string) =>
-        text.split("").map((ch, i) => (
-            <span key={i} className="preloader-letter preloader-fade">
-                {ch}
-            </span>
-        ));
+      <div className="loader-top mono" aria-hidden="true">
+        <span className="loader-mask"><span className="loader-reveal">Drafting sheet 01</span></span>
+        <span className="loader-mask"><span className="loader-reveal">Vishnu Datta — Portfolio</span></span>
+      </div>
 
-    return (
-        <>
-            <div
-                ref={layerRef}
-                style={{
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 9997,
-                    background: "#8b5cf6",
-                    clipPath: "inset(0 0 0% 0)",
-                }}
-            />
+      <div className="loader-center" aria-hidden="true">
+        <div className="loader-mask">
+          <div className="loader-count loader-reveal">
+            <span className="loader-count-value">000</span>
+            <span className="loader-count-unit mono">%</span>
+          </div>
+        </div>
+        <div className="loader-mask">
+          <div className="loader-reveal loader-status mono">
+            <span className="loader-bar"><span className="loader-bar-fill" /></span>
+            <span className="loader-status-text">{STAGES[0][1]}</span>
+          </div>
+        </div>
+      </div>
 
-            <div ref={containerRef} className="preloader">
-                <div ref={nameRef} className="preloader-name">
-                    <div className="preloader-mask">
-                        <span className="preloader-letter preloader-keep">V</span>
-                        <span className="preloader-fade-group">{makeLetters("ISHNU")}</span>
-                        <span className="preloader-space" />
-                        <span className="preloader-letter preloader-keep">D</span>
-                        <span className="preloader-fade-group">{makeLetters("ATTA")}</span>
-                    </div>
-                    <div className="preloader-meta" aria-hidden="true">
-                        <span className="preloader-line">
-                            <span className="preloader-line-glow" />
-                        </span>
-                        <div className="preloader-captions">
-                            <span className="preloader-caption">Full-Stack Engineer</span>
-                            <span className="preloader-caption">Portfolio &copy; 2026</span>
-                        </div>
-                    </div>
-                </div>
+      <dl className="loader-block mono" aria-hidden="true">
+        {TITLE_BLOCK.map(([k, v]) => (
+          <div key={k} className="loader-mask">
+            <div className="loader-reveal loader-block-row">
+              <dt>{k}</dt>
+              <dd>{v}</dd>
             </div>
-        </>
-    );
+          </div>
+        ))}
+      </dl>
+
+      <span className="loader-scan" aria-hidden="true" />
+    </div>
+  );
 }

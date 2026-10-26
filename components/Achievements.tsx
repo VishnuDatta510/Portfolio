@@ -1,10 +1,8 @@
 "use client";
-import { useRef, useEffect } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useRef } from "react";
+import { gsap, useGSAP, useReveals, reducedMotion } from "@/lib/motion";
 import { FiArrowUpRight } from "react-icons/fi";
-
-gsap.registerPlugin(ScrollTrigger);
+import SheetHead from "./SheetHead";
 
 const achievements = [
   {
@@ -38,104 +36,65 @@ const achievements = [
 ];
 
 export default function Achievements() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement>(null);
+  useReveals(ref);
 
-  useEffect(() => {
-    const root = sectionRef.current;
-    if (!root) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const ctx = gsap.context(() => {
+  useGSAP(
+    () => {
+      if (reducedMotion()) return;
       gsap.utils.toArray<HTMLElement>(".achv-row").forEach((row) => {
         const tl = gsap.timeline({
           defaults: { ease: "expo.out" },
-          scrollTrigger: {
-            trigger: row,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
+          scrollTrigger: { trigger: row, start: "top 85%", once: true },
         });
 
-        tl.from(row.querySelector(".achv-line"), {
-          scaleX: 0,
-          duration: 1.2,
-          ease: "expo.inOut",
-        })
-          .from(
-            row.querySelectorAll(".achv-metric-mask > *"),
-            { yPercent: 110, duration: 1.1, stagger: 0.08 },
-            0.25,
-          )
-          .from(
-            row.querySelectorAll(".achv-title, .achv-desc"),
-            { y: 24, opacity: 0, duration: 1, stagger: 0.08 },
-            0.35,
-          )
-          .from(
-            row.querySelectorAll(".achv-index, .achv-metric-label, .achv-meta"),
-            { y: 12, opacity: 0, duration: 0.8, stagger: 0.06 },
-            0.45,
-          );
+        tl.from(row.querySelector(".achv-line"), { scaleX: 0, duration: 1.2, ease: "expo.inOut" })
+          .from(row.querySelectorAll(".achv-metric-mask > *"), { yPercent: 110, duration: 1.1, stagger: 0.08 }, 0.25)
+          .from(row.querySelectorAll(".achv-title, .achv-desc"), { y: 24, autoAlpha: 0, duration: 1, stagger: 0.08 }, 0.35)
+          .from(row.querySelectorAll(".achv-index, .achv-metric-label, .achv-meta"), { y: 12, autoAlpha: 0, duration: 0.8, stagger: 0.06 }, 0.45);
 
         const count = row.querySelector<HTMLElement>("[data-count]");
         if (count) {
-          const end = Number(count.dataset.count);
           const n = { v: 0 };
-          count.textContent = count.dataset.text = "0";
+          count.textContent = "0";
           tl.to(
             n,
             {
-              v: end,
+              v: Number(count.dataset.count),
               duration: 1.8,
               ease: "power3.out",
               onUpdate: () => {
-                count.textContent = count.dataset.text = String(Math.round(n.v));
+                count.textContent = String(Math.round(n.v));
               },
             },
             0.3,
           );
         }
       });
-    }, root);
-
-    return () => ctx.revert();
-  }, []);
+    },
+    { scope: ref },
+  );
 
   return (
-    <section ref={sectionRef} className="achievements" id="achievements">
-      <div className="section-label">
-        <span className="section-label-line" />
-        Achievements
-      </div>
+    <section ref={ref} className="section achievements" id="achievements">
+      <SheetHead fig="06" title="Achievements" note="Test results" />
 
       <div className="achv-list">
         {achievements.map((item, i) => {
           const numeric = /^\d+$/.test(item.metric);
           return (
-            <article
-              key={item.title}
-              className={`achv-row${item.link ? " achv-row--link hoverable" : ""}`}
-            >
+            <article key={item.title} className={`achv-row${item.link ? " achv-row--link" : ""}`}>
               <span className="achv-line" aria-hidden="true" />
-
-              <span className="achv-index">
-                {String(i + 1).padStart(2, "0")}
-              </span>
+              <span className="achv-index mono">{String(i + 1).padStart(2, "0")}</span>
 
               <div className="achv-metric" aria-hidden="true">
                 <span className="achv-metric-mask">
-                  <span
-                    className="achv-metric-value"
-                    data-text={item.metric}
-                    data-count={numeric ? item.metric : undefined}
-                  >
+                  <span className="achv-metric-value" data-count={numeric ? item.metric : undefined}>
                     {item.metric}
                   </span>
-                  {item.suffix && (
-                    <span className="achv-metric-suffix">{item.suffix}</span>
-                  )}
+                  {item.suffix && <span className="achv-metric-suffix">{item.suffix}</span>}
                 </span>
-                <span className="achv-metric-label">{item.label}</span>
+                <span className="achv-metric-label mono">{item.label}</span>
               </div>
 
               <div className="achv-body">
@@ -143,13 +102,9 @@ export default function Achievements() {
                 <p className="achv-desc">{item.description}</p>
               </div>
 
-              <div className="achv-meta">
-                <span className="achv-year">{item.year}</span>
-                {item.link && (
-                  <span className="achv-arrow" aria-hidden="true">
-                    <FiArrowUpRight />
-                  </span>
-                )}
+              <div className="achv-meta mono">
+                <span>{item.year}</span>
+                {item.link && <FiArrowUpRight aria-hidden="true" className="achv-arrow" />}
               </div>
 
               {item.link && (
