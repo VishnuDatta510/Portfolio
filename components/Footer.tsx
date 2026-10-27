@@ -96,7 +96,6 @@ export default function Footer() {
 
       <div className="foot-bar mono">
         <span>© 2026 Vishnu Datta</span>
-        <span>Built with Next.js + GSAP</span>
         <button type="button" onClick={toTop}>
           Back to top <span className="foot-up" aria-hidden="true">↑</span>
         </button>

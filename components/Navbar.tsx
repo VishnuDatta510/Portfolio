@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap, ScrollTrigger, useGSAP, scramble, reducedMotion } from "@/lib/motion";
 import { getLenis } from "./SmoothScroll";
 import { navigate } from "./PageTransition";
-import LocalTime from "./LocalTime";
 
 const LINKS = [
   { id: "about", label: "About" },
@@ -86,7 +85,10 @@ export default function Navbar({ isReady }: { isReady: boolean }) {
   const decode = (e: React.PointerEvent<HTMLElement>) => {
     if (reducedMotion()) return;
     const label = e.currentTarget.querySelector(".nav-link-text");
-    if (label && !gsap.isTweening(label)) scramble(label, { duration: 0.5 });
+    if (!(label instanceof HTMLElement) || gsap.isTweening(label)) return;
+    // Lock width so scrambled glyphs can't wrap the link onto two lines.
+    label.style.minWidth = `${label.offsetWidth}px`;
+    scramble(label, { duration: 0.5, onComplete: () => { label.style.minWidth = ""; } });
   };
 
   return (
@@ -108,15 +110,6 @@ export default function Navbar({ isReady }: { isReady: boolean }) {
             </span>
           </span>
         </button>
-
-        <div className="nav-clock mono" aria-label="Local time in India">
-          <span className="nav-mask">
-            <span className="nav-reveal">
-              <span className="nav-clock-dot" aria-hidden="true" />
-              IST <LocalTime />
-            </span>
-          </span>
-        </div>
 
         <ul className="nav-links mono">
           {LINKS.map((link) => (
@@ -181,9 +174,6 @@ export default function Navbar({ isReady }: { isReady: boolean }) {
           <a href="/resume.pdf" target="_blank" rel="noopener noreferrer">
             Résumé ↗
           </a>
-          <span>
-            IST <LocalTime />
-          </span>
         </div>
       </div>
     </>

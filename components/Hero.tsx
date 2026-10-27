@@ -1,6 +1,6 @@
 "use client";
 import { useRef } from "react";
-import { gsap, SplitText, useGSAP, scramble, reducedMotion } from "@/lib/motion";
+import { gsap, useGSAP, scramble, reducedMotion } from "@/lib/motion";
 import HeroStack from "./HeroStack";
 
 const NAME = ["Vishnu", "Datta"];
@@ -15,30 +15,27 @@ export default function Hero({ isReady }: { isReady: boolean }) {
       gsap.set(root.querySelector(".hero-copy"), { autoAlpha: 1 });
       if (reducedMotion()) return;
 
-      // Outline and fill letters rise together, then ink floods the outline.
-      const outline = SplitText.create(".hero-word--outline", { type: "chars" });
-      const fill = SplitText.create(".hero-word--fill", { type: "chars" });
-
-      const tl = gsap.timeline({ defaults: { ease: "expo.out" }, delay: 0.15 });
-      tl.from(".hero-note", { yPercent: 110, duration: 0.9, stagger: 0.06 }, 0)
-        .call(() => root.querySelectorAll(".hero-note").forEach((n) => scramble(n, { duration: 0.8 })), [], 0)
-        .from(".hero-rule", { scaleX: 0, duration: 1.4, ease: "expo.inOut" }, 0)
-        .from([outline.chars, fill.chars], { yPercent: 110, duration: 1.2, stagger: 0.04 }, 0.15)
+      // Info lands first, then each name line slides in from the left; ink floods the outline.
+      const tl = gsap.timeline({ defaults: { ease: "expo.out" }, delay: 0.35 });
+      tl.from(".hero-note", { yPercent: 110, duration: 0.9, stagger: 0.06 }, 0.1)
+        .call(() => root.querySelectorAll(".hero-note").forEach((n) => scramble(n, { duration: 0.8 })), [], 0.1)
+        .from(".hero-rule", { scaleX: 0, duration: 1.4, ease: "expo.inOut" }, 0.1)
+        .from(".hero-name-line .hero-word", { xPercent: -105, duration: 1.3, stagger: 0.06 }, 0)
+        .from(".hero-lede-line", { yPercent: 110, duration: 1, stagger: 0.08 }, 0.6)
+        .from(".hero-foot-item", { yPercent: 110, duration: 0.9, stagger: 0.06 }, 0.8)
         .fromTo(
           ".hero-word--fill",
           { clipPath: "inset(0% 0% 100% 0%)" },
           { clipPath: "inset(0% 0% 0% 0%)", duration: 1.3, stagger: 0.12, ease: "expo.inOut" },
-          0.85,
+          1.0,
         )
         .fromTo(
           ".hero-name-scan",
           { yPercent: 0, autoAlpha: 1 },
           { yPercent: 100, duration: 1.3, stagger: 0.12, ease: "expo.inOut" },
-          0.85,
+          1.0,
         )
-        .to(".hero-name-scan", { autoAlpha: 0, duration: 0.3 }, ">-0.1")
-        .from(".hero-lede-line", { yPercent: 110, duration: 1, stagger: 0.08 }, 0.9)
-        .from(".hero-foot-item", { yPercent: 110, duration: 0.9, stagger: 0.06 }, 1.1);
+        .to(".hero-name-scan", { autoAlpha: 0, duration: 0.3 }, ">-0.1");
 
       // The copy drifts up and dims as the stack explodes behind it.
       gsap.to(".hero-copy", {
@@ -48,10 +45,6 @@ export default function Hero({ isReady }: { isReady: boolean }) {
         scrollTrigger: { trigger: root, start: "top top", end: "bottom top", scrub: true },
       });
 
-      return () => {
-        outline.revert();
-        fill.revert();
-      };
     },
     { scope: ref, dependencies: [isReady] },
   );

@@ -20,13 +20,13 @@ const EXPERIENCE = [
     ],
   },
   {
-    role: "Design Team Lead",
+    role: "UI/UX Team Lead",
     org: "IOTA",
     period: "Aug 2025 — Jul 2026",
     location: "IIIT Sri City",
     bullets: [
-      "Led the design team of IOTA, the tech club of IIIT Sri City, owning visual direction across events and campaigns.",
-      "Directed brand identity, event creatives and social media design while mentoring a team of junior designers.",
+      "Led the UI/UX team of IOTA, the tech club of IIIT Sri City, owning product and interface design across the club's sites, events and campaigns.",
+      "Drove user flows, wireframes and high-fidelity UI for club projects while mentoring a team of junior designers and keeping the design system consistent.",
     ],
   },
 ];

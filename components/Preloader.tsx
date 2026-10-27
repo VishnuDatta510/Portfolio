@@ -1,25 +1,16 @@
 "use client";
 import { useRef, useState } from "react";
-import { gsap, useGSAP, scramble, reducedMotion } from "@/lib/motion";
+import { gsap, useGSAP, reducedMotion } from "@/lib/motion";
 
 interface PreloaderProps {
-  /** Fires as the sheet starts lifting, so the hero can draw in under it. */
+  /** Fires as the blinds start closing, so the hero can draw in behind them. */
   onReveal: () => void;
 }
 
-const STAGES: [number, string][] = [
-  [0, "Setting up grid"],
-  [34, "Plotting layers"],
-  [68, "Annotating"],
-  [100, "Ready"],
-];
-
-const TITLE_BLOCK = [
-  ["Drawn", "V. Datta"],
-  ["Sheet", "01 of 07"],
-  ["Scale", "1 : 1"],
-  ["Rev.", "2026.10"],
-];
+const ROWS = 7;
+const HOT = 3;
+// Brake point of the rows; everything after it is the hand-off to the hero.
+const STOP = 2.5;
 
 export default function Preloader({ onReveal }: PreloaderProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -37,56 +28,47 @@ export default function Preloader({ onReveal }: PreloaderProps) {
       }
 
       document.body.style.overflow = "hidden";
-      const count = root.querySelector<HTMLElement>(".loader-count-value")!;
-      const status = root.querySelector<HTMLElement>(".loader-status-text")!;
+      const count = root.querySelector<HTMLElement>(".loader-count")!;
       const progress = { v: 0 };
-      let stage = 0;
 
-      const tl = gsap.timeline({
-        paused: true,
-        defaults: { ease: "expo.inOut" },
-        onComplete: () => setGone(true),
+      const tl = gsap.timeline({ paused: true, onComplete: () => setGone(true) });
+
+      // Rows whip past in alternating directions, braking hard, while the count runs.
+      root.querySelectorAll<HTMLElement>(".loader-row").forEach((row, i) => {
+        const right = i % 2;
+        tl.fromTo(row, { xPercent: right ? -55 : 0 }, { xPercent: right ? -5 : -50, duration: 2.6, ease: "expo.out" }, 0);
       });
-
-      tl.from(".loader-edge--h", { scaleX: 0, duration: 1.1, stagger: 0.1 })
-        .from(".loader-edge--v", { scaleY: 0, duration: 1.1, stagger: 0.1 }, 0.1)
-        .from(".loader-mark", { scale: 0, opacity: 0, duration: 0.6, stagger: 0.06, ease: "back.out(2)" }, 0.4)
-        .from(".loader-reveal", { yPercent: 110, duration: 0.8, stagger: 0.05, ease: "expo.out" }, 0.5)
+      tl.from(".loader-strip", { opacity: 0, duration: 0.5, stagger: 0.05 }, 0)
         .to(
           progress,
           {
             v: 100,
-            duration: 1.7,
-            ease: "power2.inOut",
+            duration: 2.2,
+            ease: "power2.out",
             onUpdate: () => {
-              const v = Math.round(progress.v);
-              count.textContent = String(v).padStart(3, "0");
-              const next = STAGES.findLastIndex(([at]) => v >= at);
-              if (next !== stage) {
-                stage = next;
-                status.textContent = STAGES[next][1];
-                scramble(status, { duration: 0.45 });
-              }
+              count.textContent = String(Math.round(progress.v)).padStart(3, "0");
             },
           },
-          0.6,
+          0.2,
         )
-        .fromTo(".loader-bar-fill", { scaleX: 0 }, { scaleX: 1, duration: 1.7, ease: "power2.inOut" }, 0.6)
-        .to(".loader-reveal", { yPercent: -110, duration: 0.55, stagger: 0.03, ease: "power3.in" }, "+=0.15")
-        .to(".loader-mark", { scale: 0, opacity: 0, duration: 0.4, ease: "power3.in" }, "<")
-        .to(".loader-edge--h", { scaleX: 0, transformOrigin: "right center", duration: 0.6 }, "<0.1")
-        .to(".loader-edge--v", { scaleY: 0, transformOrigin: "center bottom", duration: 0.6 }, "<")
-        .addLabel("lift", "-=0.1")
-        .call(
-          () => {
-            document.body.style.overflow = "";
-            onReveal();
+        .to(".loader-corner", { opacity: 0, duration: 0.3 }, STOP)
+        // Blinds snap shut to the right, one after another, opening the hero behind.
+        .call(onReveal, [], STOP + 0.2)
+        // Negative top/bottom insets keep the orange row's glow from being cut to a hard box.
+        .fromTo(
+          ".loader-strip",
+          { clipPath: "inset(-80px 0% -80px 0%)" },
+          {
+            clipPath: "inset(-80px 0% -80px 100%)",
+            duration: 0.9,
+            ease: "expo.inOut",
+            stagger: { each: 0.09, from: "start" },
           },
-          [],
-          "lift",
+          STOP + 0.2,
         )
-        .to(root, { clipPath: "inset(0% 0% 100% 0%)", duration: 1, ease: "expo.inOut" }, "lift")
-        .fromTo(".loader-scan", { yPercent: 0 }, { yPercent: -100, duration: 1, ease: "expo.inOut" }, "lift");
+        .call(() => {
+          document.body.style.overflow = "";
+        });
 
       // Hydration shares this task; start on a fresh frame so nothing skips.
       const frame = requestAnimationFrame(() => tl.play());
@@ -102,49 +84,25 @@ export default function Preloader({ onReveal }: PreloaderProps) {
 
   return (
     <div ref={ref} className="loader" role="status" aria-label="Loading">
-      <div className="loader-frame" aria-hidden="true">
-        <span className="loader-edge loader-edge--h loader-edge--t" />
-        <span className="loader-edge loader-edge--h loader-edge--b" />
-        <span className="loader-edge loader-edge--v loader-edge--l" />
-        <span className="loader-edge loader-edge--v loader-edge--r" />
-        <span className="loader-mark loader-mark--tl" />
-        <span className="loader-mark loader-mark--tr" />
-        <span className="loader-mark loader-mark--bl" />
-        <span className="loader-mark loader-mark--br" />
-      </div>
-
-      <div className="loader-top mono" aria-hidden="true">
-        <span className="loader-mask"><span className="loader-reveal">Drafting sheet 01</span></span>
-        <span className="loader-mask"><span className="loader-reveal">Vishnu Datta — Portfolio</span></span>
-      </div>
-
-      <div className="loader-center" aria-hidden="true">
-        <div className="loader-mask">
-          <div className="loader-count loader-reveal">
-            <span className="loader-count-value">000</span>
-            <span className="loader-count-unit mono">%</span>
-          </div>
-        </div>
-        <div className="loader-mask">
-          <div className="loader-reveal loader-status mono">
-            <span className="loader-bar"><span className="loader-bar-fill" /></span>
-            <span className="loader-status-text">{STAGES[0][1]}</span>
-          </div>
-        </div>
-      </div>
-
-      <dl className="loader-block mono" aria-hidden="true">
-        {TITLE_BLOCK.map(([k, v]) => (
-          <div key={k} className="loader-mask">
-            <div className="loader-reveal loader-block-row">
-              <dt>{k}</dt>
-              <dd>{v}</dd>
+      <div className="loader-wall" aria-hidden="true">
+        {Array.from({ length: ROWS }, (_, i) => {
+          const d = Math.abs(i - HOT);
+          const style = { "--a1": (0.34 - d * 0.07).toFixed(2), "--a2": (0.1 - d * 0.02).toFixed(2) } as React.CSSProperties;
+          return (
+            <div key={i} className={`loader-strip${i === HOT ? " loader-strip--hot" : ""}`}>
+              <div className="loader-row" style={style}>
+                {"Vishnu Datta — ".repeat(9)}
+              </div>
             </div>
-          </div>
-        ))}
-      </dl>
-
-      <span className="loader-scan" aria-hidden="true" />
+          );
+        })}
+      </div>
+      <div className="loader-corner loader-corner--tl mono" aria-hidden="true">
+        Loading <span className="loader-count">000</span>
+      </div>
+      <div className="loader-corner loader-corner--br mono" aria-hidden="true">
+        VD / 2026
+      </div>
     </div>
   );
 }
