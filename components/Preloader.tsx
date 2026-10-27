@@ -1,195 +1,108 @@
 "use client";
-import { useRef, useEffect, useState } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { useRef, useState } from "react";
+import { gsap, useGSAP, reducedMotion } from "@/lib/motion";
 
 interface PreloaderProps {
-    onComplete: () => void;
-    /** Fires once the letters have risen; the 3D scene mounts then. */
-    onIntroDone: () => void;
-    isSplineLoaded: boolean;
+  /** Fires as the blinds start closing, so the hero can draw in behind them. */
+  onReveal: () => void;
 }
 
-export default function Preloader({ onComplete, onIntroDone, isSplineLoaded }: PreloaderProps) {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const nameRef = useRef<HTMLDivElement>(null);
-    const layerRef = useRef<HTMLDivElement>(null);
-    const exitStarted = useRef(false);
+const ROWS = 7;
+const HOT = 3;
+// Brake point of the rows; everything after it is the hand-off to the hero.
+const STOP = 2.5;
 
-    const [introDone, setIntroDone] = useState(false);
-    const [waitedLongEnough, setWaitedLongEnough] = useState(false);
+export default function Preloader({ onReveal }: PreloaderProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [gone, setGone] = useState(false);
 
-    /* A cold cache or slow connection must never strand the visitor on the
-       loader, so the reveal proceeds with or without the 3D scene. */
-    useEffect(() => {
-        if (isSplineLoaded) return;
-        const timer = window.setTimeout(() => setWaitedLongEnough(true), 5500);
-        return () => window.clearTimeout(timer);
-    }, [isSplineLoaded]);
+  useGSAP(
+    () => {
+      const root = ref.current;
+      if (!root) return;
 
-    useEffect(() => {
-        return () => {
-            document.body.style.overflow = "";
-        };
-    }, []);
+      if (reducedMotion()) {
+        onReveal();
+        setGone(true);
+        return;
+      }
 
-    useGSAP(
-        () => {
-            const container = containerRef.current;
-            const name = nameRef.current;
-            if (!container || !name) return;
+      document.body.style.overflow = "hidden";
+      const count = root.querySelector<HTMLElement>(".loader-count")!;
+      const progress = { v: 0 };
 
-            document.body.style.overflow = "hidden";
+      const tl = gsap.timeline({ paused: true, onComplete: () => setGone(true) });
 
-            gsap.set(name, { opacity: 1 });
-
-            container.querySelectorAll<HTMLElement>(".preloader-fade-group").forEach((el) => {
-                el.style.width = el.getBoundingClientRect().width + "px";
-            });
-            const space = container.querySelector<HTMLElement>(".preloader-space");
-            if (space) space.style.width = space.getBoundingClientRect().width + "px";
-
-            /* Hydration runs in the same task that creates this timeline, so
-               start it on a fresh frame or the first ~100ms of the rise is
-               skipped. */
-            const tlIntro = gsap.timeline({
-                paused: true,
-                defaults: { ease: "power3.inOut" },
-                onComplete: () => setIntroDone(true),
-            });
-
-            tlIntro.from(".preloader-letter", {
-                yPercent: 110,
-                rotate: 8,
-                stagger: 0.045,
-                duration: 1,
-                ease: "expo.out",
-            })
-                .from(".preloader-line", { scaleX: 0, duration: 0.9, ease: "expo.inOut" }, 0.25)
-                .from(".preloader-caption", {
-                    yPercent: 100,
-                    opacity: 0,
-                    stagger: 0.08,
-                    duration: 0.6,
-                    ease: "power3.out",
-                }, 0.55)
-                .call(onIntroDone)
-                .to({}, { duration: 1.2 });
-
-            const frame = requestAnimationFrame(() => tlIntro.play());
-            return () => cancelAnimationFrame(frame);
-        },
-        { scope: containerRef }
-    );
-
-    /* Building the Spline scene blocks the main thread for seconds, so the
-       full name holds still until it is done; anything animating during that
-       block would visibly freeze and jump. */
-    useGSAP(() => {
-        if (exitStarted.current) return;
-        if (!introDone || !(isSplineLoaded || waitedLongEnough)) return;
-        exitStarted.current = true;
-
-        const container = containerRef.current;
-        const name = nameRef.current;
-        if (!container || !name) return;
-
-        const tlExit = gsap.timeline({
-            defaults: { ease: "power3.inOut" },
-            onComplete: () => {
-                document.body.style.overflow = "";
-                onComplete();
+      // Rows whip past in alternating directions, braking hard, while the count runs.
+      root.querySelectorAll<HTMLElement>(".loader-row").forEach((row, i) => {
+        const right = i % 2;
+        tl.fromTo(row, { xPercent: right ? -55 : 0 }, { xPercent: right ? -5 : -50, duration: 2.6, ease: "expo.out" }, 0);
+      });
+      tl.from(".loader-strip", { opacity: 0, duration: 0.5, stagger: 0.05 }, 0)
+        .to(
+          progress,
+          {
+            v: 100,
+            duration: 2.2,
+            ease: "power2.out",
+            onUpdate: () => {
+              count.textContent = String(Math.round(progress.v)).padStart(3, "0");
             },
+          },
+          0.2,
+        )
+        .to(".loader-corner", { opacity: 0, duration: 0.3 }, STOP)
+        // Blinds snap shut to the right, one after another, opening the hero behind.
+        .call(onReveal, [], STOP + 0.2)
+        // Negative top/bottom insets keep the orange row's glow from being cut to a hard box.
+        .fromTo(
+          ".loader-strip",
+          { clipPath: "inset(-80px 0% -80px 0%)" },
+          {
+            clipPath: "inset(-80px 0% -80px 100%)",
+            duration: 0.9,
+            ease: "expo.inOut",
+            stagger: { each: 0.09, from: "start" },
+          },
+          STOP + 0.2,
+        )
+        .call(() => {
+          document.body.style.overflow = "";
         });
 
-        tlExit
-            .to(".preloader-caption", {
-                yPercent: -100,
-                opacity: 0,
-                stagger: 0.05,
-                duration: 0.4,
-                ease: "power3.in",
-            })
-            .to(".preloader-line", {
-                scaleX: 0,
-                transformOrigin: "right center",
-                duration: 0.5,
-                ease: "expo.in",
-            }, 0)
-            .to(".preloader-fade", {
-                yPercent: -110,
-                rotate: -6,
-                stagger: { each: 0.025, from: "center" },
-                duration: 0.45,
-                ease: "power3.in",
-            }, 0.1)
-            .to(".preloader-fade-group", { width: 0, duration: 0.55, ease: "expo.inOut" }, "-=0.2")
-            .to(".preloader-space", { width: 0, duration: 0.55, ease: "expo.inOut" }, "<")
-            .to(name, {
-                scale: 1.15,
-                duration: 0.35,
-                ease: "back.out(2.5)",
-            }, "-=0.15")
-            .to(".preloader-keep", {
-                yPercent: -110,
-                stagger: 0.07,
-                duration: 0.5,
-                ease: "power4.in",
-            }, "+=0.1")
-            .to(container, {
-                clipPath: "inset(0 0 100% 0)",
-                duration: 0.7,
-                ease: "expo.inOut",
-            }, "-=0.2")
-            .to(layerRef.current, {
-                clipPath: "inset(0 0 100% 0)",
-                duration: 0.7,
-                ease: "expo.inOut",
-            }, "-=0.55");
+      // Hydration shares this task; start on a fresh frame so nothing skips.
+      const frame = requestAnimationFrame(() => tl.play());
+      return () => {
+        cancelAnimationFrame(frame);
+        document.body.style.overflow = "";
+      };
+    },
+    { scope: ref },
+  );
 
-    }, [introDone, isSplineLoaded, waitedLongEnough]);
+  if (gone) return null;
 
-
-    const makeLetters = (text: string) =>
-        text.split("").map((ch, i) => (
-            <span key={i} className="preloader-letter preloader-fade">
-                {ch}
-            </span>
-        ));
-
-    return (
-        <>
-            <div
-                ref={layerRef}
-                style={{
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 9997,
-                    background: "#8b5cf6",
-                    clipPath: "inset(0 0 0% 0)",
-                }}
-            />
-
-            <div ref={containerRef} className="preloader">
-                <div ref={nameRef} className="preloader-name">
-                    <div className="preloader-mask">
-                        <span className="preloader-letter preloader-keep">V</span>
-                        <span className="preloader-fade-group">{makeLetters("ISHNU")}</span>
-                        <span className="preloader-space" />
-                        <span className="preloader-letter preloader-keep">D</span>
-                        <span className="preloader-fade-group">{makeLetters("ATTA")}</span>
-                    </div>
-                    <div className="preloader-meta" aria-hidden="true">
-                        <span className="preloader-line">
-                            <span className="preloader-line-glow" />
-                        </span>
-                        <div className="preloader-captions">
-                            <span className="preloader-caption">Full-Stack Engineer</span>
-                            <span className="preloader-caption">Portfolio &copy; 2026</span>
-                        </div>
-                    </div>
-                </div>
+  return (
+    <div ref={ref} className="loader" role="status" aria-label="Loading">
+      <div className="loader-wall" aria-hidden="true">
+        {Array.from({ length: ROWS }, (_, i) => {
+          const d = Math.abs(i - HOT);
+          const style = { "--a1": (0.34 - d * 0.07).toFixed(2), "--a2": (0.1 - d * 0.02).toFixed(2) } as React.CSSProperties;
+          return (
+            <div key={i} className={`loader-strip${i === HOT ? " loader-strip--hot" : ""}`}>
+              <div className="loader-row" style={style}>
+                {"Vishnu Datta — ".repeat(9)}
+              </div>
             </div>
-        </>
-    );
+          );
+        })}
+      </div>
+      <div className="loader-corner loader-corner--tl mono" aria-hidden="true">
+        Loading <span className="loader-count">000</span>
+      </div>
+      <div className="loader-corner loader-corner--br mono" aria-hidden="true">
+        VD / 2026
+      </div>
+    </div>
+  );
 }

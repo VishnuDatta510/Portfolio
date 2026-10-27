@@ -1,143 +1,95 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { gsap, useGSAP, useReveals, reducedMotion } from "@/lib/motion";
+import SheetHead from "./SheetHead";
 
-gsap.registerPlugin(ScrollTrigger);
+const SPEC = [
+  ["Based", "India · IST"],
+  ["Focus", "Backends, media pipelines, product UI"],
+  ["Education", "B.Tech CSE, IIIT Sri City"],
+  ["Period", "Aug 2023 — May 2027"],
+];
 
 export default function About() {
-    const sectionRef = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement>(null);
+  useReveals(ref);
 
-    useEffect(() => {
-        if (!sectionRef.current) return;
+  useGSAP(
+    () => {
+      if (reducedMotion()) return;
+      const figure = ".about-figure";
 
-        const root = sectionRef.current;
+      gsap
+        .timeline({ scrollTrigger: { trigger: figure, start: "top 80%", once: true } })
+        .fromTo(".about-frame", { clipPath: "inset(0% 0% 100% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 1.4, ease: "expo.inOut" })
+        .fromTo(".about-frame-scan", { yPercent: 0, autoAlpha: 1 }, { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, 0)
+        .to(".about-frame-scan", { autoAlpha: 0, duration: 0.3 })
+        .from(".about-photo", { scale: 1.35, duration: 1.8, ease: "expo.out" }, 0.2)
+        .from(".about-bracket", { scale: 0, duration: 0.6, stagger: 0.06, ease: "back.out(2)" }, 0.9);
 
-        const ctx = gsap.context(() => {
-            const words = root.querySelectorAll(".word-inner");
-            const eduElements = root.querySelectorAll(".about-education > *");
+      gsap.fromTo(
+        ".about-photo-inner",
+        { yPercent: -8 },
+        { yPercent: 8, ease: "none", scrollTrigger: { trigger: figure, start: "top bottom", end: "bottom top", scrub: true } },
+      );
 
-            const tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: root.querySelector(".about-text"),
-                    start: "top 80%",
-                    toggleActions: "play none none none",
-                }
-            });
+      gsap.from(".about-spec-row", {
+        autoAlpha: 0,
+        y: 16,
+        duration: 0.8,
+        stagger: 0.08,
+        ease: "expo.out",
+        scrollTrigger: { trigger: ".about-spec", start: "top 88%", once: true },
+      });
+    },
+    { scope: ref },
+  );
 
-            tl.to(words, {
-                y: 0,
-                opacity: 1,
-                stagger: 0.03,
-                duration: 0.6,
-                ease: "power3.out",
-            });
+  return (
+    <section ref={ref} className="section about" id="about">
+      <SheetHead fig="02" title="About" note="The engineer" />
 
-            if (eduElements.length > 0) {
-                tl.fromTo(eduElements,
-                    { y: 30, opacity: 0 },
-                    {
-                        y: 0,
-                        opacity: 1,
-                        stagger: 0.15,
-                        duration: 0.8,
-                        ease: "power3.out",
-                    },
-                    "-=0.2"
-                );
-            }
+      <div className="about-grid">
+        <div className="about-copy">
+          <p className="about-lead" data-split>
+            I&apos;m a full-stack engineer who enjoys building the systems behind great products, from media pipelines and APIs
+            to the interfaces people actually touch.
+          </p>
+          <p className="about-body" data-split>
+            I recently wrapped up a Software Development Engineer internship at Soundverse AI, shipping production backends for
+            music distribution, transcription and media processing. I care about software that is fast, reliable and a pleasure
+            to use, and I&apos;m always exploring where AI can make it better.
+          </p>
 
-            const imageWrapper = root.querySelector(".about-image-wrapper");
-            if (imageWrapper) {
-                gsap.to(imageWrapper, {
-                    opacity: 1,
-                    scale: 1,
-                    duration: 1,
-                    ease: "power3.out",
-                    scrollTrigger: {
-                        trigger: imageWrapper,
-                        start: "top 80%",
-                        toggleActions: "play none none none",
-                    },
-                });
+          <dl className="about-spec mono">
+            {SPEC.map(([k, v]) => (
+              <div key={k} className="about-spec-row">
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
 
-                const image = root.querySelector(".about-image");
-                if (image) {
-                    const float = gsap.to(image, {
-                        y: -15,
-                        duration: 2.5,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: "sine.inOut",
-                        paused: true,
-                    });
-
-                    // Idles instead of ticking forever while offscreen.
-                    ScrollTrigger.create({
-                        trigger: imageWrapper,
-                        start: "top bottom",
-                        end: "bottom top",
-                        onToggle: ({ isActive }) =>
-                            isActive ? float.play() : float.pause(),
-                    });
-                }
-            }
-        }, root);
-
-        return () => ctx.revert();
-    }, []);
-
-    const wrapWords = (text: string) =>
-        text.split(" ").map((word, i) => (
-            <span key={i} className="word">
-                <span className="word-inner">{word}</span>
-            </span>
-        ));
-
-    return (
-        <section ref={sectionRef} className="about" id="about">
-            <div className="section-label">
-                <span className="section-label-line" />
-                About
+        <figure className="about-figure">
+          <div className="about-frame">
+            <div className="about-photo">
+              <div className="about-photo-inner">
+                <Image src="/picyay.jpg" alt="Portrait of Vishnu Datta" fill sizes="(max-width: 768px) 92vw, 40vw" />
+              </div>
             </div>
-
-            <div className="about-grid">
-                <div className="about-text">
-                    {wrapWords(
-                        "I'm a full-stack engineer who enjoys building the systems behind great products, from media pipelines and APIs to the interfaces people actually touch. I recently wrapped up a Software Development Engineer internship at Soundverse AI, shipping production backends for music distribution, transcription and media processing."
-                    )}
-                    <br />
-                    <br />
-                    {wrapWords(
-                        "I care about software that is fast, reliable and a pleasure to use, and I'm always exploring where AI can make it better."
-                    )}
-
-                    <div className="about-education">
-                        <p className="education-label">Education</p>
-                        <div className="education-header">
-                            <h3 className="education-institute">Indian Institute of Information Technology Sricity</h3>
-                            <p className="education-date">Aug 2023 - May 2027</p>
-                        </div>
-                        <p className="education-title">Bachelor of Technology in Computer Science and Engineering</p>
-                        <p className="education-desc">
-                            Currently pursuing Bachelor of Technology with a focus on computer science and engineering. Learning New Technologies and exploring various domains in computer science.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="about-image-wrapper">
-                    <div className="about-image-glow" />
-                    <Image
-                        src="/picyay.jpg"
-                        alt="Vishnu Datta"
-                        width={500}
-                        height={500}
-                        sizes="(max-width: 560px) 92vw, 500px"
-                        className="about-image"
-                    />
-                </div>
-            </div>
-        </section>
-    );
+            <span className="about-frame-scan" aria-hidden="true" />
+          </div>
+          {["tl", "tr", "bl", "br"].map((c) => (
+            <span key={c} className={`about-bracket about-bracket--${c}`} aria-hidden="true" />
+          ))}
+          <figcaption className="mono">
+            <span>Detail A</span>
+            <span>The author, 1 : 1</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  );
 }

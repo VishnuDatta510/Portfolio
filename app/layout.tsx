@@ -1,30 +1,41 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import SmoothScroll from "@/components/SmoothScroll";
+import Cursor from "@/components/Cursor";
+import PageTransition from "@/components/PageTransition";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const sans = Geist({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-sans",
   display: "swap",
 });
 
-const inter = Inter({
+const mono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-body",
+  variable: "--font-mono",
+  display: "swap",
+});
+
+const serif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
+  variable: "--font-serif",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Vishnu Datta - Web Developer",
+  title: "Vishnu Datta — Full-stack Engineer",
   description:
-    "Portfolio of Vishnu Datta — crafting digital experiences that merge stunning design with cutting-edge technology.",
+    "Vishnu Datta is a full-stack engineer building the systems behind products, from media pipelines and APIs to the interfaces people touch.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#09090e",
+  themeColor: "#0c0d0e",
   colorScheme: "dark",
 };
 
@@ -35,25 +46,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* The 3D scene is fetched client-side; open the sockets early. */}
-        <link rel="preconnect" href="https://prod.spline.design" />
-        <link rel="preconnect" href="https://unpkg.com" crossOrigin="anonymous" />
-        {/* Hero mounts Spline only after the preloader intro, so fetch the
-            scene now; mobile never shows it. */}
-        <link
-          rel="preload"
-          href="https://prod.spline.design/sF4UdzWuD4EmnRZ2/scene.splinecode"
-          as="fetch"
-          crossOrigin="anonymous"
-          media="(min-width: 769px)"
-        />
-      </head>
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable}`}
+        className={`${sans.variable} ${mono.variable} ${serif.variable}`}
         suppressHydrationWarning
       >
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <div className="sheet-grid" aria-hidden="true" />
+        <SmoothScroll />
+        <Cursor />
         {children}
+        <PageTransition />
         <Analytics />
       </body>
     </html>

@@ -1,148 +1,110 @@
 "use client";
-import { useRef, useEffect } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useRef } from "react";
+import { gsap, ScrollTrigger, useGSAP, useReveals, reducedMotion } from "@/lib/motion";
+import SheetHead from "./SheetHead";
 
-gsap.registerPlugin(ScrollTrigger);
-
+// **text** marks a figure worth catching on a skim.
 const EXPERIENCE = [
-  {
-    role: "Design Team Lead",
-    org: "IOTA",
-    period: "AUG 2025 → JUL 2026",
-    location: "IIIT Sricity",
-    bullets: [
-      "Led the design team of IOTA, the tech club of IIIT Sricity, owning visual direction across events and campaigns.",
-      "Directed brand identity, event creatives and social media design while mentoring a team of junior designers.",
-    ],
-    current: false,
-  },
   {
     role: "SDE Intern",
     org: "Soundverse AI",
-    period: "APR 2026 → OCT 2026",
+    period: "Apr 2026 — Oct 2026",
     location: "Remote",
     bullets: [
-      "Scaled a Whisper transcription and speaker-diarization pipeline from 25 MB to 500 MB inputs with silence-aware chunking, parallel transcription and live progress over Server-Sent Events.",
-      "Built core services of the Music Distribution pipeline that releases artists' songs to Spotify, Apple Music and YouTube, behind a fail-closed quality gate of 7 weighted checks (loudness, ISRC conflicts, AI provenance, copyright, AWS Rekognition moderation).",
-      "Built the Media Converter end to end for audio, video and images: background jobs with live Socket.IO progress, per-plan Redis rate limits and token billing; fixed a proxy that stalled large files for 40–200 s.",
-      "Co-built the move from MP4 to HLS over a CDN, benchmarking seeks 7.6x faster and first byte 6x faster.",
+      "Scaled a Whisper transcription and speaker-diarization pipeline from **25 MB to 500 MB** inputs with silence-aware chunking, parallel transcription and live progress over Server-Sent Events.",
+      "Built core services of the Music Distribution pipeline that releases artists' songs to Spotify, Apple Music and YouTube, behind a fail-closed quality gate of **7 weighted checks** (loudness, ISRC conflicts, AI provenance, copyright, AWS Rekognition moderation).",
+      "Built the Media Converter end to end for audio, video and images: background jobs with live Socket.IO progress, per-plan Redis rate limits and token billing; fixed a proxy that stalled large files for **40–200 s**.",
+      "Co-built the move from MP4 to HLS over a CDN, benchmarking seeks **7.6x faster** and first byte **6x faster**.",
       "Designed a cross-channel notification system where one record per event feeds the in-app bell, Firebase push and Amazon SES email, cancelling held emails once the user reads it anywhere.",
       "Worked across gRPC/Protobuf and REST API design, PostgreSQL schemas and integrations like Didit identity verification, Sign in with Apple and Google Play Billing.",
     ],
-    current: false,
+  },
+  {
+    role: "UI/UX Team Lead",
+    org: "IOTA",
+    period: "Aug 2025 — Jul 2026",
+    location: "IIIT Sri City",
+    bullets: [
+      "Led the UI/UX team of IOTA, the tech club of IIIT Sri City, owning product and interface design across the club's sites, events and campaigns.",
+      "Drove user flows, wireframes and high-fidelity UI for club projects while mentoring a team of junior designers and keeping the design system consistent.",
+    ],
   },
 ];
 
+const emphasise = (text: string) =>
+  text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : part));
+
 export default function Experience() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement>(null);
+  useReveals(ref);
 
-  useEffect(() => {
-    if (!sectionRef.current) return;
+  useGSAP(
+    () => {
+      if (reducedMotion()) return;
 
-    const ctx = gsap.context(() => {
-      /* Spine draws as you scroll through the timeline */
       gsap.fromTo(
-        ".experience-line-fill",
+        ".exp-trace-fill",
         { scaleY: 0 },
         {
           scaleY: 1,
           ease: "none",
-          transformOrigin: "top center",
-          scrollTrigger: {
-            trigger: ".experience-timeline",
-            start: "top 72%",
-            end: "bottom 58%",
-            scrub: 0.6,
-          },
+          scrollTrigger: { trigger: ".exp-list", start: "top 70%", end: "bottom 60%", scrub: 0.5 },
         },
       );
 
-      gsap
-        .utils.toArray<HTMLElement>(".experience-item")
-        .forEach((item) => {
-          const fromLeft = item.classList.contains("experience-item--left");
-
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: item,
-              start: "top 78%",
-              toggleActions: "play none none none",
-            },
-          });
-
-          tl.fromTo(
-            item.querySelector(".experience-node"),
-            { scale: 0 },
-            { scale: 1, duration: 0.6, ease: "back.out(2.2)" },
-          )
-            .fromTo(
-              item.querySelector(".experience-card"),
-              { opacity: 0, x: fromLeft ? -60 : 60 },
-              { opacity: 1, x: 0, duration: 0.9, ease: "power3.out" },
-              0.1,
-            )
-            .fromTo(
-              item.querySelectorAll(".experience-points li"),
-              { opacity: 0, y: 16 },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.5,
-                stagger: 0.08,
-                ease: "power3.out",
-              },
-              0.35,
-            );
+      gsap.utils.toArray<HTMLElement>(".exp-item").forEach((item) => {
+        ScrollTrigger.create({
+          trigger: item,
+          start: "top 70%",
+          onToggle: (self) => item.classList.toggle("is-live", self.isActive),
+          end: "bottom 60%",
         });
-    }, sectionRef);
 
-    return () => ctx.revert();
-  }, []);
+        gsap.from(item.querySelectorAll(".exp-point"), {
+          autoAlpha: 0,
+          y: 20,
+          duration: 0.9,
+          stagger: 0.07,
+          ease: "expo.out",
+          scrollTrigger: { trigger: item.querySelector(".exp-points"), start: "top 85%", once: true },
+        });
+      });
+    },
+    { scope: ref },
+  );
 
   return (
-    <section ref={sectionRef} className="experience" id="experience">
-      <div className="section-label">
-        <span className="section-label-line" />
-        Experience
-      </div>
+    <section ref={ref} className="section experience" id="experience">
+      <SheetHead fig="03" title="Experience" note="Revision history" />
 
-      <div className="experience-timeline">
-        <span className="experience-line" aria-hidden="true">
-          <span className="experience-line-fill" />
+      <div className="exp-list">
+        <span className="exp-trace" aria-hidden="true">
+          <span className="exp-trace-fill" />
         </span>
 
         {EXPERIENCE.map((e, i) => (
-          <article
-            key={e.role}
-            className={`experience-item ${
-              i % 2 === 0 ? "experience-item--left" : "experience-item--right"
-            }`}
-          >
-            <span className="experience-node" aria-hidden="true">
-              <i className={e.current ? "current" : ""} />
-            </span>
+          <article key={e.org} className="exp-item">
+            <span className="exp-pad" aria-hidden="true" />
+            <div className="exp-meta mono">
+              <span data-scramble>Rev. {String(EXPERIENCE.length - i).padStart(2, "0")}</span>
+              <span data-scramble>{e.period}</span>
+              <span data-scramble>{e.location}</span>
+            </div>
 
-            <div className="experience-card">
-              <div className="experience-period-row">
-                <span className="experience-period">{e.period}</span>
-                <span className="experience-location">
-                  {e.location.toUpperCase()}
-                </span>
-              </div>
-
-              <h3 className="experience-role">{e.role}</h3>
-
-              <p className="experience-org">
-                {e.org}
-                {e.current && <span className="experience-badge">NOW</span>}
-              </p>
-
-              <ul className="experience-points">
+            <div className="exp-body">
+              <h3 className="exp-role" data-split>
+                {e.role} <span className="exp-org">@ {e.org}</span>
+              </h3>
+              <ol className="exp-points">
                 {e.bullets.map((b, j) => (
-                  <li key={j}>{b}</li>
+                  <li key={j} className="exp-point">
+                    <span className="exp-point-index mono">
+                      {i + 1}.{j + 1}
+                    </span>
+                    <p>{emphasise(b)}</p>
+                  </li>
                 ))}
-              </ul>
+              </ol>
             </div>
           </article>
         ))}

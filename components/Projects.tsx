@@ -1,140 +1,134 @@
 "use client";
-import { useRef, useEffect } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { FiGithub, FiExternalLink } from "react-icons/fi";
-import Link from "next/link";
-import BlurText from "./BlurText";
+import { Fragment, useRef, useState } from "react";
+import { gsap, useGSAP, useReveals, reducedMotion } from "@/lib/motion";
+import { FEATURED, PROJECTS } from "@/lib/projects";
+import SheetHead from "./SheetHead";
+import { TransitionLink } from "./PageTransition";
 
-gsap.registerPlugin(ScrollTrigger);
-
-const projects = [
-  {
-    num: "01",
-    name: "Audira AI",
-    description:
-      "An AI technical interviewer that reads each candidate's résumé against the job description, then runs coding, project and fundamentals rounds, probing vague answers like a human interviewer. LLM-written problems are verified against a hidden reference solution and submissions run sandboxed on Judge0 in 13 languages, with recruiter reports that tie every score to the candidate's own words.",
-    year: "2026",
-    github: "https://github.com/VishnuDatta510/Audira",
-    liveLink: "https://audira-ai.vercel.app/",
-  },
-  {
-    num: "02",
-    name: "CodeRep",
-    description:
-      "A spaced-repetition system for LeetCode: a Next.js web app plus Chrome Extension used by 20+ daily active users, catching accepted submissions with 99% accuracy and scheduling reviews with an adaptive algorithm on PostgreSQL and Prisma.",
-    year: "2026",
-    github: "https://github.com/VishnuDatta510/CodeRep",
-    liveLink: "https://coderep.vercel.app/",
-  },
-  {
-    num: "03",
-    name: "TaskLane",
-    description:
-      "A multi-tenant, Jira-style work tracker with drag-and-drop boards, server-enforced roles and an append-only audit log. The analytics dashboard stays at a constant 4 SQL queries at any data size, with Redis caching and Celery handling email and overdue sweeps off the request path.",
-    year: "2026",
-    github: "https://github.com/VishnuDatta510/Tasklane",
-    liveLink: "",
-  },
-  {
-    num: "04",
-    name: "FluenSee",
-    description:
-      "An AI-powered language learning platform on the MERN stack with real-time video calls, peer-to-peer chat and conversational AI sessions with integrated flashcards, powered by the Google Gemini API and Stream SDK.",
-    year: "2025",
-    github: "https://github.com/VishnuDatta510/FluenSee",
-    liveLink: "https://fluensee.onrender.com/",
-  },
-];
+/** Columns of nodes, joined by connectors that carry a travelling packet. */
+function ArchDiagram({ columns }: { columns: string[][] }) {
+  return (
+    <div className="arch" role="img" aria-label={`Architecture: ${columns.map((c) => c.join(" and ")).join(", then ")}`}>
+      {columns.map((col, i) => (
+        <Fragment key={i}>
+          {i > 0 && (
+            <span className="arch-link" aria-hidden="true">
+              <span className="arch-packet" style={{ animationDelay: `${i * 0.35}s` }} />
+            </span>
+          )}
+          <div className="arch-col">
+            {col.map((node) => (
+              <span key={node} className="arch-node mono">
+                {node}
+              </span>
+            ))}
+          </div>
+        </Fragment>
+      ))}
+    </div>
+  );
+}
 
 export default function Projects() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement>(null);
+  const [open, setOpen] = useState(0);
+  const first = useRef(true);
+  useReveals(ref);
 
-  useEffect(() => {
-    const root = sectionRef.current;
-    if (!root) return;
-
-    const ctx = gsap.context(() => {
-      gsap.to(".project-row", {
-        opacity: 1,
-        y: 0,
-        stagger: 0.12,
-        duration: 0.7,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: root.querySelector(".projects-list"),
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
+  useGSAP(
+    () => {
+      const panels = gsap.utils.toArray<HTMLElement>(".proj-panel");
+      if (first.current || reducedMotion()) {
+        first.current = false;
+        panels.forEach((p, i) => gsap.set(p, { height: i === open ? "auto" : 0 }));
+        return;
+      }
+      panels.forEach((p, i) => {
+        const opening = i === open;
+        gsap.to(p, { height: opening ? "auto" : 0, duration: 0.9, ease: "expo.inOut", overwrite: true });
+        if (opening) {
+          gsap.fromTo(
+            p.querySelectorAll(".proj-panel-inner > *"),
+            { autoAlpha: 0, y: 24 },
+            { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.06, ease: "expo.out", delay: 0.25 },
+          );
+        }
       });
-    }, root);
+    },
+    { scope: ref, dependencies: [open] },
+  );
 
-    return () => ctx.revert();
-  }, []);
+  useGSAP(
+    () => {
+      if (reducedMotion()) return;
+      gsap.from(".proj-head", {
+        clipPath: "inset(0% 100% 0% 0%)",
+        duration: 1.2,
+        stagger: 0.08,
+        ease: "expo.inOut",
+        clearProps: "clipPath",
+        scrollTrigger: { trigger: ".proj-list", start: "top 85%", once: true },
+      });
+    },
+    { scope: ref },
+  );
 
   return (
-    <section ref={sectionRef} className="projects" id="work">
-      <div className="section-label">
-        <span className="section-label-line" />
-        Projects
+    <section ref={ref} className="section projects" id="work">
+      <SheetHead fig="05" title="Selected work" note={`Projects 01—${String(FEATURED.length).padStart(2, "0")}`} />
+
+      <div className="proj-list">
+        {FEATURED.map((p, i) => {
+          const isOpen = open === i;
+          const id = `proj-panel-${p.slug}`;
+          return (
+            <article key={p.slug} className={`proj${isOpen ? " is-open" : ""}`}>
+              <h3 className="proj-title">
+                <button
+                  type="button"
+                  className="proj-head"
+                  aria-expanded={isOpen}
+                  aria-controls={id}
+                  onClick={() => setOpen(isOpen ? -1 : i)}
+                >
+                  <span className="proj-num mono">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="proj-name">{p.name}</span>
+                  <span className="proj-tags mono">{p.tags.join(" / ")}</span>
+                  <span className="proj-year mono">{p.year}</span>
+                  <span className="proj-toggle" aria-hidden="true" />
+                </button>
+              </h3>
+
+              <div id={id} className="proj-panel" inert={!isOpen}>
+                <div className="proj-panel-inner">
+                  <p className="proj-desc">{p.description ?? p.summary}</p>
+                  {p.arch && <ArchDiagram columns={p.arch} />}
+                  <div className="proj-foot">
+                    <ul className="proj-stack mono">
+                      {p.stack?.map((s) => <li key={s}>{s}</li>)}
+                    </ul>
+                    <div className="proj-links mono">
+                      {p.live && (
+                        <a href={p.live} target="_blank" rel="noopener noreferrer">
+                          Live ↗
+                        </a>
+                      )}
+                      <a href={p.github} target="_blank" rel="noopener noreferrer">
+                        Source ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
-      <div className="projects-list">
-        {projects.map((p) => (
-          <div
-            key={p.num}
-            className="project-row hoverable"
-            onClick={() => {
-              const url = p.liveLink || p.github;
-              if (url) window.open(url, "_blank");
-            }}
-          >
-            <span className="project-num">{p.num}</span>
-            <div className="project-info">
-              <BlurText
-                text={p.name}
-                delay={30}
-                animateBy="letters"
-                direction="bottom"
-                className="project-name"
-              />
-              <p className="project-description">{p.description}</p>
-            </div>
-            <span className="project-year">{p.year}</span>
-            <div className="project-links">
-              {p.github && (
-                <a
-                  href={p.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-link"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <FiGithub size={20} />
-                </a>
-              )}
-              {p.liveLink && (
-                <a
-                  href={p.liveLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-link"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <FiExternalLink size={20} />
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="projects-footer">
-        <Link href="/projects" className="btn-view-all hoverable">
-          <span className="btn-text">VIEW ALL PROJECTS</span>
-          <span className="btn-icon">→</span>
-        </Link>
-      </div>
+      <TransitionLink href="/projects" className="proj-index mono">
+        <span>View all projects ({String(PROJECTS.length).padStart(2, "0")})</span>
+        <span className="proj-index-arrow" aria-hidden="true">→</span>
+      </TransitionLink>
     </section>
   );
 }
