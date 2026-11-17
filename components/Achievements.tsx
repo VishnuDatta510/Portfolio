@@ -21,10 +21,10 @@ const achievements: Achievement[] = [
   {
     year: "2026",
     metric: "1st",
-    label: "Regional round",
-    title: "Regional Winner – GDG Bit N Build International Hackathon",
+    label: "State level",
+    title: "State-Level Winner – GDG Bit N Build International Hackathon",
     description:
-      "Won the regional round of GDG's Bit N Build International Hackathon and qualified for the International Grand Finals in Mumbai.",
+      "Won the Andhra Pradesh state-level round of GDG's Bit N Build International Hackathon and qualified for the International Grand Finals in Mumbai.",
     link: "https://drive.google.com/file/d/1gEeu1wlL-3aP0Vet02DwGwMzi3EUTWN4/view?usp=sharing",
     image: "/bnb-winner.png",
   },
