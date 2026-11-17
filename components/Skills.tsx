@@ -146,10 +146,12 @@ function orbit(g: HTMLElement, delay: number, { ink, accent }: Palette) {
     const r = el.getBoundingClientRect();
     return { x: r.left - gr.left + r.width / 2, y: r.top - gr.top + r.height / 2, w: r.width };
   };
+  // Phones: a narrower, rounder ring with smaller parts so it stays on screen.
+  const narrow = gr.width < 560;
   const c = { x: gr.width / 2, y: Math.min(gr.height / 2, 220) };
-  const rx = Math.min(gr.width * 0.36, 190);
-  const ry = Math.min(gr.height * 0.3, 140);
-  const rs = 0.88; // parts shrink a touch in flight so three rings sit side by side
+  const rx = Math.min(gr.width * (narrow ? 0.28 : 0.36), 190);
+  const ry = Math.min(Math.max(gr.height * 0.3, narrow ? rx * 0.8 : 0), 140);
+  const rs = narrow ? 0.78 : 0.88; // parts shrink a touch in flight so three rings sit side by side
   const t = centre(titleEl);
   const S = Math.max(1.6, Math.min(2.8, (gr.width * 0.95) / t.w));
 
@@ -183,6 +185,7 @@ function orbit(g: HTMLElement, delay: number, { ink, accent }: Palette) {
     onStart: () => void gsap.set(g, { zIndex: 20 }),
     onComplete: () => finish(g),
   });
+  if (narrow) tl.timeScale(1.25); // phones: same moves, a little quicker
   gsap.set(titleEl, { x: c.x - t.x, y: c.y - t.y, scale: S * 0.85, autoAlpha: 0, color: accent });
   update();
 
@@ -191,18 +194,6 @@ function orbit(g: HTMLElement, delay: number, { ink, accent }: Palette) {
     .to(P, { t: 1, rot: 2.9, duration: 1.2, ease: "power3.inOut", onUpdate: update }, "+=0.15")
     .to(titleEl, { x: 0, y: 0, scale: 1, color: ink, duration: 1.1, ease: "power3.inOut" }, "<");
   settle(tl, g, "-=0.5");
-}
-
-/** Phones: a short fade-up, one section at a time. */
-function fadeUp(g: HTMLElement, delay: number, { ink, accent }: Palette) {
-  const titleEl = g.querySelector(".bom-title")!;
-  const tl = gsap.timeline({ delay, onComplete: () => finish(g) });
-  gsap.set(titleEl, { y: 18, color: accent });
-  gsap.set(g.querySelectorAll(".bom-part"), { y: 16 });
-  tl.to(titleEl, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out" })
-    .to(titleEl, { color: ink, duration: 0.5 }, ">-0.1")
-    .to(g.querySelectorAll(".bom-part"), { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.04, ease: "power3.out" }, "<0.1");
-  settle(tl, g, 0.1);
 }
 
 export default function Skills() {
@@ -216,17 +207,25 @@ export default function Skills() {
       const palette = { ink: css.getPropertyValue("--ink").trim(), accent: css.getPropertyValue("--accent").trim() };
       const groups = Array.from(ref.current.querySelectorAll<HTMLElement>(".bom-group"));
       const played = new Set<HTMLElement>();
+      // A fast flick on a phone triggers several rows at once; queue them so the
+      // big titles cascade instead of piling on top of each other.
+      let free = 0;
 
       // A group that scrolls in plays together with the rest of its visual row;
       // the next row waits for its own scroll. Layout is read at play time, so
       // breakpoints and late font loads do not matter.
       const playRow = contextSafe((g: HTMLElement) => {
         const row = groups.filter((o) => o.offsetTop === g.offsetTop && !played.has(o));
-        const play = window.innerWidth >= 720 ? orbit : fadeUp;
-        row.forEach((o, k) => {
-          played.add(o);
-          play(o, k * 0.14, palette);
-        });
+        row.forEach((o) => played.add(o));
+        // Already scrolled past: just show it, don't spend queue time off screen.
+        if (g.getBoundingClientRect().bottom < 0) {
+          row.forEach((o) => gsap.set(o.querySelectorAll("*"), { clearProps: "opacity,visibility,transform,borderBottomColor" }));
+          return;
+        }
+        const now = gsap.ticker.time;
+        const wait = Math.max(0, free - now);
+        free = now + wait + (window.innerWidth < 600 ? 0.9 : 1.1);
+        row.forEach((o, k) => orbit(o, wait + k * 0.14, palette));
       });
 
       groups.forEach((g) => {

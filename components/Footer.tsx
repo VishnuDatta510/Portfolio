@@ -14,7 +14,7 @@ const BLOCK: { k: string; v: React.ReactNode; href?: string }[] = [
   { k: "GitHub", v: "VishnuDatta510", href: "https://github.com/VishnuDatta510" },
   { k: "LeetCode", v: "Vishno-Way", href: "https://leetcode.com/u/Vishno-Way/" },
   { k: "Résumé", v: "PDF ↗", href: "/resume.pdf" },
-  { k: "Updated", v: "Oct 2026" },
+  { k: "Updated", v: "Nov 2026" },
 ];
 
 export default function Footer() {

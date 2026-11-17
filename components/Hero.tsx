@@ -69,9 +69,9 @@ export default function Hero({ isReady }: { isReady: boolean }) {
         </h1>
 
         <p className="hero-lede">
-          <span className="hero-mask"><span className="hero-lede-line">Full-stack engineer. I build the <em>systems</em></span></span>{" "}
-          <span className="hero-mask"><span className="hero-lede-line">behind products — media pipelines, APIs</span></span>{" "}
-          <span className="hero-mask"><span className="hero-lede-line">and the interfaces people actually touch.</span></span>
+          <span className="hero-mask"><span className="hero-lede-line">Software engineer. I build the <em>systems</em></span></span>{" "}
+          <span className="hero-mask"><span className="hero-lede-line">behind products, from the backend</span></span>{" "}
+          <span className="hero-mask"><span className="hero-lede-line">to the interfaces people actually touch.</span></span>
         </p>
 
         <ul className="hero-foot mono">

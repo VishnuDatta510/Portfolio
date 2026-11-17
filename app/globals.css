@@ -547,11 +547,21 @@ main,
 }
 .nav-overlay-foot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 4px 20px;
   margin-top: 32px;
-  padding-top: 16px;
+  padding-top: 8px;
   border-top: 1px solid var(--line);
   color: var(--muted);
+}
+.nav-overlay-foot a {
+  padding: 10px 0;
+  transition: color 0.3s;
+}
+.nav-overlay-foot a:hover,
+.nav-overlay-foot a:focus-visible {
+  color: var(--accent);
 }
 
 /* === Hero === */
@@ -820,7 +830,7 @@ main,
 }
 .about-frame {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background: var(--bg-2);
 }
@@ -835,7 +845,13 @@ main,
 .about-photo-inner {
   inset: -10% 0;
 }
+/* The photo never takes the pointer, so there's no "Save image" / "Open in new tab"
+   on right-click or long-press, and it can't be dragged out. */
 .about-photo img {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   object-fit: cover;
   filter: grayscale(1) contrast(1.05);
   transition: filter 0.8s var(--ease-out);
@@ -1085,26 +1101,49 @@ main,
     color 0.3s,
     transform 0.5s var(--ease-out);
 }
-.bom-row:hover .bom-ref,
-.bom-row:hover .bom-icon,
-.bom-row:hover .bom-name {
-  color: var(--accent);
-}
-.bom-row:hover .bom-icon {
-  transform: scale(1.12);
-}
-.bom-row:hover .bom-name {
-  transform: translateX(6px);
+/* Hover-only flourishes stay off touch screens, where a tap would leave them stuck on. */
+@media (hover: hover) {
+  .bom-row:hover .bom-ref,
+  .bom-row:hover .bom-icon,
+  .bom-row:hover .bom-name {
+    color: var(--accent);
+  }
+  .bom-row:hover .bom-icon {
+    transform: scale(1.12);
+  }
+  .bom-row:hover .bom-name {
+    transform: translateX(6px);
+  }
 }
 @media (max-width: 1000px) {
   .bom {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* Phones: parts pack two to a row with small icons, so 35 parts read as a list, not a scroll. */
 @media (max-width: 720px) {
   .bom {
+    --ic: 22px;
     grid-template-columns: minmax(0, 1fr);
-    gap: 56px;
+    gap: 48px;
+  }
+  .bom-rows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+  }
+  .bom-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 0;
+  }
+  .bom-ref {
+    display: none;
+  }
+  .bom-part {
+    gap: 10px;
+  }
+  .bom-name {
+    font-size: 14px;
   }
 }
 
@@ -1140,8 +1179,10 @@ main,
   letter-spacing: -0.04em;
   transition: transform 0.6s var(--ease-out);
 }
-.proj-head:hover .proj-name {
-  transform: translateX(12px);
+@media (hover: hover) {
+  .proj-head:hover .proj-name {
+    transform: translateX(12px);
+  }
 }
 .proj-head:hover .proj-num,
 .proj.is-open .proj-num {
@@ -1461,17 +1502,81 @@ main,
   color: var(--ink);
   transition: transform 0.5s var(--ease-out), color 0.3s;
 }
-.achv-row--link:hover .achv-title,
-.achv-row--link:hover .achv-arrow {
-  color: var(--accent);
-}
-.achv-row--link:hover .achv-arrow {
-  transform: translate(3px, -3px);
+@media (hover: hover) {
+  .achv-row--link:hover .achv-title,
+  .achv-row--link:hover .achv-arrow {
+    color: var(--accent);
+  }
+  .achv-row--link:hover .achv-arrow {
+    transform: translate(3px, -3px);
+  }
 }
 .achv-hit {
   position: absolute;
   inset: 0;
   z-index: 1;
+}
+
+/* Certificate card that trails the mouse over its row (fine pointers only). */
+.achv-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  width: min(380px, 32vw);
+  padding: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  visibility: hidden;
+  will-change: transform;
+}
+.achv-preview-img,
+.achv-thumb-img {
+  position: relative;
+  display: block;
+  aspect-ratio: 1505 / 1035;
+  overflow: hidden;
+  background: var(--bg);
+}
+.achv-preview-img img,
+.achv-thumb-img img {
+  object-fit: cover;
+}
+.achv-preview-cap {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 2px 0;
+  font-size: 10px;
+  color: var(--muted);
+}
+.achv-preview-cap span:last-child {
+  color: var(--accent);
+}
+
+/* Touch screens can't hover, so the certificate sits inline; the whole row opens it. */
+.achv-thumb {
+  display: none;
+}
+@media (hover: none), (pointer: coarse) {
+  .achv-thumb {
+    display: block;
+    max-width: 420px;
+    margin-top: 20px;
+    padding: 6px;
+    border: 1px solid var(--line-2);
+    background: var(--bg-2);
+  }
+  .achv-thumb-cap {
+    display: block;
+    padding: 10px 2px 4px;
+    font-size: 10px;
+    color: var(--accent);
+  }
+  .achv-row--link:active .achv-thumb {
+    border-color: var(--accent);
+  }
 }
 
 /* === Footer === */
@@ -1811,12 +1916,34 @@ main,
 }
 
 /* === Responsive === */
+.nav-resume {
+  display: none;
+}
+
 @media (max-width: 1100px) {
+  .nav {
+    grid-template-columns: 1fr auto auto;
+  }
   .nav-links {
     display: none;
   }
   .nav-burger {
     display: inline-flex;
+  }
+  .nav-resume {
+    display: block;
+  }
+  .nav-resume .nav-link--cta {
+    display: block;
+    margin: 0;
+    padding: 9px 14px;
+  }
+}
+
+/* Portrait screens: rows sized off the height so the blinds cover the whole screen. */
+@media (orientation: portrait) {
+  .loader-row {
+    font-size: 14.6svh;
   }
 }
 
@@ -1942,7 +2069,7 @@ main,
 
 @media (max-width: 600px) {
   .nav {
-    grid-template-columns: 1fr auto;
+    gap: 16px;
   }
   .nav-clock {
     display: none;
@@ -1956,12 +2083,96 @@ main,
   .about-spec-row {
     grid-template-columns: 96px 1fr;
   }
+  .about-frame {
+    aspect-ratio: 4 / 5;
+  }
+
+  /* Hero fills exactly one screen: the stack takes whatever the copy leaves. */
+  .hero {
+    grid-template-rows: auto minmax(220px, 1fr) auto auto auto;
+    padding-top: 84px;
+    padding-bottom: 28px;
+  }
+  .hero-lede,
+  .hero-foot {
+    margin-top: 20px;
+  }
+  .hero-lede {
+    font-size: 16px;
+  }
+  .hero-foot {
+    gap: 8px 20px;
+    padding-top: 16px;
+  }
+
+  .about-body {
+    margin-top: 24px;
+    font-size: 16px;
+  }
+  .about-spec {
+    margin-top: 40px;
+  }
+
+  /* Experience: thinner rail, no point numbers, so the copy gets the width. */
+  .exp-list {
+    --rail: 24px;
+  }
+  .exp-item {
+    padding: 36px 0;
+  }
+  .exp-pad {
+    top: 40px;
+  }
+  .exp-points {
+    margin-top: 20px;
+  }
+  .exp-point {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px 0;
+  }
+  .exp-point-index {
+    display: none;
+  }
+  .exp-point p {
+    font-size: 15px;
+  }
+
+  .proj-desc {
+    font-size: 16px;
+  }
+  .proj-panel-inner {
+    gap: 24px;
+    padding-bottom: 36px;
+  }
+  /* Bigger tap targets without moving the underline. */
+  .proj-links a,
+  .dwg-links a {
+    display: inline-block;
+    padding-top: 12px;
+  }
+
+  .achv-row {
+    padding: 32px 0;
+  }
+
+  .foot-email {
+    margin-top: 28px;
+  }
+  .foot-block {
+    margin-top: 48px;
+  }
+  .foot-cell {
+    padding: 14px;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 340px) {
   .foot-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+@media (max-width: 480px) {
   .stack-label-tech {
     display: none;
   }
