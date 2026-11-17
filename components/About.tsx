@@ -6,7 +6,7 @@ import SheetHead from "./SheetHead";
 
 const SPEC = [
   ["Based", "India · IST"],
-  ["Focus", "Backends, media pipelines, product UI"],
+  ["Focus", "Software engineering, full stack"],
   ["Education", "B.Tech CSE, IIIT Sri City"],
   ["Period", "Aug 2023 — May 2027"],
 ];
@@ -53,13 +53,13 @@ export default function About() {
       <div className="about-grid">
         <div className="about-copy">
           <p className="about-lead" data-split>
-            I&apos;m a full-stack engineer who enjoys building the systems behind great products, from media pipelines and APIs
-            to the interfaces people actually touch.
+            I&apos;m a software engineer who enjoys building the systems behind great products, from the backend and APIs to
+            the interfaces people actually touch.
           </p>
           <p className="about-body" data-split>
-            I recently wrapped up a Software Development Engineer internship at Soundverse AI, shipping production backends for
-            music distribution, transcription and media processing. I care about software that is fast, reliable and a pleasure
-            to use, and I&apos;m always exploring where AI can make it better.
+            I recently wrapped up a Software Development Engineer internship at Soundverse AI, shipping production services
+            used by real customers. I care about software that is fast, reliable and a pleasure to use, and I&apos;m always
+            exploring where AI can make it better.
           </p>
 
           <dl className="about-spec mono">
@@ -76,7 +76,7 @@ export default function About() {
           <div className="about-frame">
             <div className="about-photo">
               <div className="about-photo-inner">
-                <Image src="/picyay.jpg" alt="Portrait of Vishnu Datta" fill sizes="(max-width: 768px) 92vw, 40vw" />
+                <Image src="/pfp.png" alt="Portrait of Vishnu Datta" fill sizes="(max-width: 768px) 92vw, 40vw" draggable={false} />
               </div>
             </div>
             <span className="about-frame-scan" aria-hidden="true" />

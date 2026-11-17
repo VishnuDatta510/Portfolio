@@ -27,9 +27,9 @@ const serif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Vishnu Datta — Full-stack Engineer",
+  title: "Vishnu Datta — Software Engineer",
   description:
-    "Vishnu Datta is a full-stack engineer building the systems behind products, from media pipelines and APIs to the interfaces people touch.",
+    "Vishnu Datta is a software engineer building the systems behind products, from the backend and APIs to the interfaces people touch.",
 };
 
 export const viewport: Viewport = {

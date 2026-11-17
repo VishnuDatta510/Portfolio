@@ -134,6 +134,18 @@ export default function Navbar({ isReady }: { isReady: boolean }) {
           </li>
         </ul>
 
+        {/* Résumé stays one tap away when the links collapse into the menu. */}
+        <span className="nav-mask nav-resume">
+          <a
+            href="/resume.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="nav-link nav-link--cta nav-reveal mono"
+          >
+            Résumé ↗
+          </a>
+        </span>
+
         <button
           type="button"
           className="nav-burger mono"
@@ -173,6 +185,13 @@ export default function Navbar({ isReady }: { isReady: boolean }) {
         <div className="nav-overlay-foot mono">
           <a href="/resume.pdf" target="_blank" rel="noopener noreferrer">
             Résumé ↗
+          </a>
+          <a href="mailto:vishnudatta2004@gmail.com">Email ↗</a>
+          <a href="https://www.linkedin.com/in/vishnudattagb/" target="_blank" rel="noopener noreferrer">
+            LinkedIn ↗
+          </a>
+          <a href="https://github.com/VishnuDatta510" target="_blank" rel="noopener noreferrer">
+            GitHub ↗
           </a>
         </div>
       </div>

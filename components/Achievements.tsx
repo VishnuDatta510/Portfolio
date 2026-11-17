@@ -1,18 +1,32 @@
 "use client";
-import { useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import Image from "next/image";
 import { gsap, useGSAP, useReveals, reducedMotion } from "@/lib/motion";
 import { FiArrowUpRight } from "react-icons/fi";
 import SheetHead from "./SheetHead";
 
-const achievements = [
+type Achievement = {
+  year: string;
+  metric: string;
+  suffix?: string;
+  label: string;
+  title: string;
+  description: string;
+  link: string;
+  /** Certificate shown on hover (desktop) or inline (touch). */
+  image?: string;
+};
+
+const achievements: Achievement[] = [
   {
     year: "2026",
     metric: "1st",
-    label: "Regional round",
-    title: "Regional Winner – GDG Bit N Build International Hackathon",
+    label: "State level",
+    title: "State-Level Winner – GDG Bit N Build International Hackathon",
     description:
-      "Won the regional round of GDG's Bit N Build International Hackathon and qualified for the International Grand Finals in Mumbai.",
-    link: "",
+      "Won the Andhra Pradesh state-level round of GDG's Bit N Build International Hackathon and qualified for the International Grand Finals in Mumbai.",
+    link: "https://drive.google.com/file/d/1gEeu1wlL-3aP0Vet02DwGwMzi3EUTWN4/view?usp=sharing",
+    image: "/bnb-winner.png",
   },
   {
     year: "2026",
@@ -35,9 +49,61 @@ const achievements = [
   },
 ];
 
+const CERTIFICATE = achievements.find((a) => a.image)?.image;
+const noop = () => () => {};
+
 export default function Achievements() {
   const ref = useRef<HTMLElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const follow = useRef<{ show: (e: React.PointerEvent) => void; hide: () => void } | null>(null);
+  // The floating preview only exists for a real mouse; touch gets an inline thumbnail instead.
+  const canHover = useSyncExternalStore(
+    noop,
+    () => window.matchMedia("(hover: hover) and (pointer: fine)").matches,
+    () => false,
+  );
   useReveals(ref);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!canHover || !el) return;
+    const opts = { duration: 0.55, ease: "power3" };
+    const xTo = gsap.quickTo(el, "x", opts);
+    const yTo = gsap.quickTo(el, "y", opts);
+    const rTo = gsap.quickTo(el, "rotation", { duration: 0.8, ease: "power3" });
+    let lastX = 0;
+    let settle = 0;
+    gsap.set(el, { xPercent: -50, yPercent: -50, autoAlpha: 0, scale: 0.6 });
+
+    // The card trails the pointer and leans into the direction of travel.
+    const move = (e: PointerEvent) => {
+      xTo(e.clientX);
+      yTo(e.clientY);
+      rTo(gsap.utils.clamp(-10, 10, (e.clientX - lastX) * 0.5));
+      lastX = e.clientX;
+      clearTimeout(settle);
+      settle = window.setTimeout(() => rTo(0), 90);
+    };
+
+    follow.current = {
+      show: (e) => {
+        if (e.pointerType !== "mouse") return;
+        lastX = e.clientX;
+        gsap.set(el, { x: e.clientX, y: e.clientY });
+        window.addEventListener("pointermove", move, { passive: true });
+        gsap.to(el, { autoAlpha: 1, scale: 1, duration: 0.5, ease: "expo.out", overwrite: "auto" });
+      },
+      hide: () => {
+        window.removeEventListener("pointermove", move);
+        gsap.to(el, { autoAlpha: 0, scale: 0.6, rotation: 0, duration: 0.35, ease: "power3.in", overwrite: "auto" });
+      },
+    };
+    return () => {
+      clearTimeout(settle);
+      window.removeEventListener("pointermove", move);
+      follow.current = null;
+    };
+  }, [canHover]);
 
   useGSAP(
     () => {
@@ -83,7 +149,12 @@ export default function Achievements() {
         {achievements.map((item, i) => {
           const numeric = /^\d+$/.test(item.metric);
           return (
-            <article key={item.title} className={`achv-row${item.link ? " achv-row--link" : ""}`}>
+            <article
+              key={item.title}
+              className={`achv-row${item.link ? " achv-row--link" : ""}`}
+              onPointerEnter={item.image ? (e) => follow.current?.show(e) : undefined}
+              onPointerLeave={item.image ? () => follow.current?.hide() : undefined}
+            >
               <span className="achv-line" aria-hidden="true" />
               <span className="achv-index mono">{String(i + 1).padStart(2, "0")}</span>
 
@@ -100,6 +171,14 @@ export default function Achievements() {
               <div className="achv-body">
                 <h3 className="achv-title">{item.title}</h3>
                 <p className="achv-desc">{item.description}</p>
+                {item.image && (
+                  <span className="achv-thumb" aria-hidden="true">
+                    <span className="achv-thumb-img">
+                      <Image src={item.image} alt="" fill sizes="(max-width: 768px) 92vw, 420px" />
+                    </span>
+                    <span className="achv-thumb-cap mono">Tap to view certificate ↗</span>
+                  </span>
+                )}
               </div>
 
               <div className="achv-meta mono">
@@ -113,13 +192,25 @@ export default function Achievements() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="achv-hit"
-                  aria-label={`View achievement: ${item.title}`}
+                  aria-label={item.image ? `View certificate: ${item.title}` : `View achievement: ${item.title}`}
                 />
               )}
             </article>
           );
         })}
       </div>
+
+      {canHover && CERTIFICATE && (
+        <div ref={previewRef} className="achv-preview" aria-hidden="true">
+          <span className="achv-preview-img">
+            <Image src={CERTIFICATE} alt="" fill sizes="380px" loading="eager" />
+          </span>
+          <span className="achv-preview-cap mono">
+            <span>Certificate</span>
+            <span>Click to open ↗</span>
+          </span>
+        </div>
+      )}
     </section>
   );
 }
